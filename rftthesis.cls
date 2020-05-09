@@ -184,6 +184,11 @@
   \def\@secondsupervisor{#1}
 }
 
+\def\@industrysupervisor{tmp}
+\newcommand{\industrysupervisor}[1]{
+  \def\@industrysupervisor{#1}
+}
+
 \def\@creatorname{John Doe}
 \def\@creatorrole{Deer}
 \newcommand{\creator}[2]{
@@ -243,6 +248,9 @@
  Supervisors:\\
  \@firstsupervisor\\
  \@secondsupervisor\\
+ \\
+ Industry supervisor:\\
+ \@industrysupervisor\\
 
  \vspace*{\fill}
  \begin{center}

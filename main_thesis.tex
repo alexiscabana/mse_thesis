@@ -4,11 +4,12 @@
 \usepackage[T1]{fontenc}
 \usepackage{csquotes}
 \usepackage{graphicx}
+\usepackage{setspace}
 
 \setacronymstyle{long-short}
 
 
-\title           {Development of snapshot and fault injection methods within the hypervisor of Dream Chaser's COMS system}
+\title           {Development of snapshot and fault injection techniques within the hypervisor of Dream Chaser's COMS system}
 \type            {Masters thesis}
 \author          {B.Eng. Alexis Cabana-Loriaux}
 \matriculation   {0407200}
@@ -26,28 +27,35 @@
 \maketitle
 \makedeclaration
 
-\chapter*{Acknowledgements}
+{ 
+\onehalfspacing
+\chapter*{Acknowledgements}\label{cha:ack}
 
 \chapter*{Abstract}\label{cha:abstract}
 
 \chapter*{Zusammenfassung}\label{cha:zusammenfassung}
 
 \chapter*{Résumé}\label{cha:resume}
+}
 
 \tableofcontents
 
-\listoffigures
-
 \listoftables
+
+\listoffigures
 
 \printnoidxglossaries
 
-\chapter{Introduction}
+{
+\onehalfspacing
+\chapter{Introduction}\label{cha:intro}
+hey whats up\\ dhdsads
+\section
+\chapter{Background}\label{cha:background}
 
-\chapter{Preleminaries}
+\chapter{State of the art}\label{cha:stateoftheart}
 
-\chapter{State of the art}
-
-%add further content here
+\chapter{Conclusion and recommendations}\label{cha:conclusion}
+}
 
 \end{document}
