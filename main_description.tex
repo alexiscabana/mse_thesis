@@ -4,6 +4,7 @@
 \usepackage[T1]{fontenc}
 \usepackage{csquotes}
 \usepackage{graphicx}
+\usepackage{setspace}
 \usepackage{wrapfig}
 
 \setacronymstyle{long-short}
@@ -20,7 +21,7 @@
 \date            {\today}
 
 \begin{document}
-
+\onehalfspacing
 
 %
 %  HEADER
@@ -54,6 +55,7 @@ With the ever decreasing cost of computing power, functional simulation of compo
 %  Purpose 
 %
 \section*{Purpose}\label{sec:purpose}
+The present Thesis shall firstly analyze different strategies of checkpoint/restart of the DCCS Application Software (DAS) in the BBPSim simulator. This \textit{snapshotting} technique enables saving the state of an hypervisor, storing it in non-volatile memory and restoring the hypervisor to a past saved state. Being able to save the state of the simulation of a software component is a highly desirable feature when doing integration testing. It enables . An exhaustive research shall be conducted on similar existing solutions, notably in the virtualization software and in the Linux kernel. By comparing different techniques, a will be chosen to fit  main constraint of non-intrusiveness of 
 
 %
 %  Tasks 
