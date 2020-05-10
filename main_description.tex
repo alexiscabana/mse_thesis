@@ -33,7 +33,7 @@ Project description - Masters thesis
 \\
 \vspace{.5cm}
 \begin{LARGE}
-Development of Snapshot and Fault Injection Techniques within Dream Chaser's COMS System's Hypervisor
+Development of Snapshot and Fault Injection Techniques within Dream Chaser's Software-in-the-loop Test Framework
 \end{LARGE}
 \end{center}
 
@@ -45,7 +45,7 @@ The Dream Chaser Cargo System (DCCS) is a reusable orbital spaceplane from Sierr
 
 \begin{wrapfigure}{R}{0.45\textwidth}
 \centering
-\includegraphics[width=0.4\textwidth]{art/dccs}
+\includegraphics[width=0.43\textwidth]{art/dccs}
 \caption{\label{fig:dccs}Artist impression of the Dream Chaser Cargo System. [Sierra Nevada Corporation]}
 \end{wrapfigure}
 
@@ -55,12 +55,28 @@ With the ever decreasing cost of computing power, functional simulation of compo
 %  Purpose 
 %
 \section*{Purpose}\label{sec:purpose}
-The present Thesis shall firstly analyze different strategies of checkpoint/restart of the DCCS Application Software (DAS) in the BBPSim simulator. This \textit{snapshotting} technique enables saving the state of an hypervisor, storing it in non-volatile memory and restoring the hypervisor to a past saved state. Being able to save the state of the simulation of a software component is a highly desirable feature when doing integration testing. It enables . An exhaustive research shall be conducted on similar existing solutions, notably in the virtualization software and in the Linux kernel. By comparing different techniques, a will be chosen to fit  main constraint of non-intrusiveness of 
+The present Thesis shall firstly analyze different \textit{snapshotting} strategies of the DCCS Application Software (DAS) within the BBPSim simulator. This technique will enable saving the running state of DAS, storing it in non-volatile memory and restoring DAS to a past saved state. \textit{Snapshotting} is a highly desirable feature that enables rerun of integration tests under the same conditions. An exhaustive research shall be conducted on similar existing solutions, notably in virtual machine software and in the Linux kernel. An adapted solution will then be designed and implemented to fit BBPSim. 
 
+Secondly, the Thesis will investigate various existing fault injection techniques, both in hardware and software, in order to develop and incorporate a custom-fit, software-in-the-loop solution in BBPSim. Fault injection will allow testing DAS to guarantee it can recover from error conditions.
 %
 %  Tasks 
 %
 \section*{Summary of tasks}\label{sec:tasks}
+\begin{itemize}
+\item Litterature research on the various state snapshotting/storing and fault injection methods, both in existing software and in a self-developed approach
+\item Identify usable concepts in the context of BBPSim and how they can adapt to fit MDA's needs 
+\item Design a custom solution for non-intrusive snapshotting, state representation/storage/recovery and fault injection testing process, then integrate it in BBPSim
+\item Implement and document the chosen concepts in software
+\item Validate workability from a user's perspective
+\item Assess the impact on the existing testing pipeline of DAS and on its long-term robustness
+\end{itemize}
 
+\subsection*{Supervisor}
+\begin{spacing}{1}
+Claudio Discepola\\
+Senior Member, Technical Staff\\
++1-514-457-2150, Ext. 3170\\
+claudio.discepola@mdacorporation.com
+\end{spacing}
 
 \end{document}
