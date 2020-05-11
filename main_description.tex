@@ -6,6 +6,8 @@
 \usepackage{graphicx}
 \usepackage{setspace}
 \usepackage{wrapfig}
+\usepackage{float}
+\usepackage{lscape}
 
 \setacronymstyle{long-short}
 
@@ -55,9 +57,9 @@ With the ever decreasing cost of computing power, functional simulation of compo
 %  Purpose 
 %
 \section*{Purpose}\label{sec:purpose}
-The present Thesis shall firstly analyze different \textit{snapshotting} strategies of the DCCS Application Software (DAS) within the BBPSim simulator. This technique will enable saving the running state of DAS, storing it in non-volatile memory and restoring DAS to a past saved state. \textit{Snapshotting} is a highly desirable feature that enables rerun of integration tests under the same conditions. An exhaustive research shall be conducted on similar existing solutions, notably in virtual machine software and in the Linux kernel. An adapted solution will then be designed and implemented to fit BBPSim. 
+The present thesis shall firstly analyze different \textit{snapshotting} strategies of the DCCS Application Software (DAS) within the BBPSim simulator. This technique will enable saving the running state of DAS, storing it in non-volatile memory and restoring DAS to a past saved state. \textit{Snapshotting} is a highly desirable feature that enables reruning integration tests under the same conditions. An exhaustive research shall be conducted on similar existing solutions, notably in virtual machine software and in the Linux kernel. An adapted solution will then be designed and implemented to fit BBPSim. 
 
-Secondly, the Thesis will investigate various existing fault injection techniques, both in hardware and software, in order to develop and incorporate a custom-fit, software-in-the-loop solution in BBPSim. Fault injection will allow testing DAS to guarantee it can recover from error conditions.
+Secondly, the thesis will investigate various existing fault injection techniques, both in hardware and software, in order to develop and incorporate a custom-fit, software-in-the-loop solution in BBPSim. Fault injection will allow testing DAS to guarantee it can recover from error conditions.
 %
 %  Tasks 
 %
@@ -65,8 +67,8 @@ Secondly, the Thesis will investigate various existing fault injection technique
 \begin{itemize}
 \item Litterature research on the various state snapshotting/storing and fault injection methods, both in existing software and in a self-developed approach
 \item Identify usable concepts in the context of BBPSim and how they can adapt to fit MDA's needs 
-\item Design a custom solution for non-intrusive snapshotting, state representation/storage/recovery and fault injection testing process, then integrate it in BBPSim
-\item Implement and document the chosen concepts in software
+\item Design a custom solution for non-intrusive snapshotting, state representation/storage/recovery and fault injection testing process 
+\item Implement and integrate the chosen concepts in software in BBPSim, document the code
 \item Validate workability from a user's perspective
 \item Assess the impact on the existing testing pipeline of DAS and on its long-term robustness
 \end{itemize}
@@ -79,4 +81,16 @@ Senior Member, Technical Staff\\
 claudio.discepola@mdacorporation.com
 \end{spacing}
 
+\vspace{1.5cm}
+N.B This is a collaborative work with Sierra Nevada Corporation. As such, MDA and by extension this thesis, are bounded by the requirements imposed by SNC.
+
+\newpage
+
+\begin{landscape}
+\section*{Time plan}
+\begin{figure}[H]
+	\includegraphics[scale=0.47]{art/time_plan.png}
+	\caption{Thesis time plan}
+\end{figure}
+\end{landscape}
 \end{document}
