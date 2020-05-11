@@ -7,3 +7,4 @@
 *.synctex.gz
 *.xml
 *.log
+build/*
