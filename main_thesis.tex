@@ -2,59 +2,64 @@
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
+\usepackage[nottoc]{tocbibind}
 \usepackage{csquotes}
 \usepackage{graphicx}
 \usepackage{setspace}
 
-\setacronymstyle{long-short}
+
+\title           	{Development of Snapshot and Fault Injection Techniques within Dream Chaser's Software-in-the-loop Test Framework}
+\type            	{Masters thesis}
+\author          	{B.Eng. Alexis Cabana-Loriaux}
+\matriculation   	{0407200}
+\studies         	{Masters of Space Engineering}
+\firstsupervisor 	{Prof. Dr.-Ing. Klaus Brieß}
+\secondsupervisor	{M.Sc. Mario Starke}
+\industrysupervisor {Claudio Discepola, Senior Member, MDA Corporation}
+\date            	{\today}
 
 
-\title           {Development of snapshot and fault injection techniques within the hypervisor of Dream Chaser's COMS system}
-\type            {Masters thesis}
-\author          {B.Eng. Alexis Cabana-Loriaux}
-\matriculation   {0407200}
-\studies         {Masters of Space Engineering}
-\firstsupervisor {Prof. Dr.-Ing. Klaus Brieß}
-\secondsupervisor{Dipl.-Ing. XXXX}
-\date            {\today}
-
+% Glossary is defined in preamble
 \makenoidxglossaries
-
 \input{tex/acronyms}
 
+% references are also defined in preamble
+\addbibresource{references.bib}
 
 \begin{document}
-\maketitle
-\makedeclaration
+%First page here
+%\maketitle
+%\makedeclaration
+\onehalfspacing
 
 { 
-\onehalfspacing
-\chapter*{Acknowledgements}\label{cha:ack}
+% pre-thesis content
+%\input{tex/acknowledgements.tex}
 
-\chapter*{Abstract}\label{cha:abstract}
-
-\chapter*{Zusammenfassung}\label{cha:zusammenfassung}
-
-\chapter*{Résumé}\label{cha:resume}
+%\input{tex/abstract.tex}
+%\input{tex/resume.tex}
+%\input{tex/zusammenfassung.tex}
 }
 
-\tableofcontents
+%\tableofcontents
 
-\listoftables
+%\listoftables
 
-\listoffigures
+%\listoffigures
 
-\printnoidxglossaries
+%\printnoidxglossary[type=acronym,]
 
 {
-\onehalfspacing
-\chapter{Introduction}\label{cha:intro}
-hey whats up\\ dhdsads
-\chapter{Background}\label{cha:background}
-
-\chapter{State of the art}\label{cha:stateoftheart}
-
-\chapter{Conclusion and recommendations}\label{cha:conclusion}
+% Whole content of the thesis
+\input{tex/introduction.tex}
+%\input{tex/conclusion.tex}
 }
+
+
+% post-content of thesis
+\printbibliography[
+	heading=bibintoc,
+	title={Whole bibliography}
+]
 
 \end{document}
