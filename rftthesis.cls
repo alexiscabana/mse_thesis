@@ -80,8 +80,9 @@
 
 \RequirePackage[
   style = numeric,
-  backend = biber
-]{biblatex}[2016/05/08] % ver. 3.4
+  backend = biber,
+  sorting=ynt
+]{biblatex} % ver. 3.4
 
 \RequirePackage[
  colorlinks = true,
@@ -216,7 +217,7 @@
  \thispagestyle{\titlepagestyle}
  \hfill\includegraphics[height = 40mm]{art/TU_Logo_lang_RGB_rot.jpg}
 
- \vspace*{20mm}
+ \vspace*{10mm}
  \vspace*{14.4pt}
 
  \vspace*{2em}
@@ -252,7 +253,7 @@
  Industry supervisor:\\
  \@industrysupervisor\\
 
- \vspace*{\fill}
+ \vspace{\fill}
  \begin{center}
   \@date
  \end{center}
