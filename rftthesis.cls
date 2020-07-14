@@ -81,7 +81,8 @@
 \RequirePackage[
   style = numeric,
   backend = biber,
-  sorting=ynt
+  sorting=none,
+  style=numeric
 ]{biblatex} % ver. 3.4
 
 \RequirePackage[

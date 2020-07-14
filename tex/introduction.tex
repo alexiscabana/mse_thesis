@@ -1,5 +1,44 @@
+{
+\setlength{\parindent}{2em}
 \chapter{Introduction}\label{cha:intro}
-Since the termination of the Space Shuttle program in 2011, the \gls{NASA} has been forced to turn to other countries and private entreprises for the transportation of cargo to orbit and beyond. The \gls{CRS} program is a good example of this : a public-private partnership in which supplies provided by NASA are launched into orbit to the \gls{ISS} by commercial rockets. Of course, the new "Delivery-as-a-Service" paradigm has spawned a lot of commercial interests all around the world. In the United States, the Dream Chaser program is one of the efforts that contributes strengthening the ties between public space agencies and the private sector.
+Since the termination of the Space Shuttle program in 2011, the \gls{NASA} has been turning to other countries and private enterprises for the transportation of cargo to orbit and beyond. The \gls{CRS} program is a good example of this : a public-private partnership in which supplies provided by NASA are launched into orbit to the \gls{ISS} by commercial rockets. Of course, the new "Delivery-as-a-Service" paradigm has spawned a lot of commercial interest all around the world. In the United States, the Dream Chaser program is one of those efforts that continue strengthening the ties between public space agencies and the private sector.
 
 \section{The Dream Chaser program}
-The \gls{DCCS} is a reusable orbital spaceplane from \gls{SNC} intended for the resupply of both pressurized and unpressurized cargo to the \gls{ISS}. It is a private project that also aims at providing transportation 
+This thesis' scope is entirely contained within the Dream Chaser project. Therefore, the spacecraft and its design is the main subject. Before expanding into the body of the document, a little background is of course important.
+\subsection{History}
+Conceptualized in 2004 by SpaceDev, the \gls{DCCS} program was officially kick-started by \gls{SNC} in 2010, following its acquisition of SpaceDev in 2008\cite{online:fikes}. Seeing the potential and future possibilities of the transportation system, NASA then awarded funding for the project as part of their \gls{CCDev} program, furthering the development efforts. As \gls{SNC} started breaking down the spacecraft into several sub-systems, it also started subcontracting their development to other companies. So far, the first flight to the \gls{ISS} is officially scheduled for 2021. However, seeing as the present thesis is taking place in 2020, the launch will most probably be postponed.
+
+\subsection{Features}
+The \gls{DCCS} is an unmanned, reusable orbital spaceplane intended for the transportation of both pressurized and unpressurized cargo to and from the \gls{ISS}. It contains many features that make it a very interesting end solution for different kinds of space needs. 
+
+First of all, the system contains a powerful propulsion system made out of a cluster of Orbitec's Vortex engines\cite{online:messier}. This enables self-cruising and orbit correction, instead of being 100\% reliant on the launch provider for exact orbit insertion. Furthermore, this on-board propulsion opens up other possibilities for Dream Chaser deeper than \gls{LEO}, like transporting cargo to the coming Lunar Gateway. 
+
+Secondly, the  spacecraft is partly made reusable by the development of a custom, very resistant airframe by Lockheed Martin. The haul, its wings and landing gear enable \gls{DCCS} to safely land on a runway from \gls{LEO}. With these features, it's of course very easy to compare Dream Chaser to a mini Space Shuttle (see \autoref{fig:dccs_landed}). 
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\linewidth, keepaspectratio]{art/dream_chaser_landed.jpg}
+	\caption{Dream Chaser on a runway at sunset.}
+	\label{fig:dccs_landed}
+	\source{Sierra Nevada Corporation \cite{misc:dccs_landed}}
+\end{figure}
+Finally, its communication subsystem is made of several types of antennas, for encrypted telecommunication with ground stations and the \gls{ISS}. Because docking to the space station is also one the spacecraft's capabilities, a physical communication link is present too. \gls{MDA} has been put in charge of this crucial component's development by \gls{SNC}. 
+
+\section{MDA - Industry partner}
+In the emerging Canadian space sector, \gls{MDA} is widely recognized as one of its greatest actors. The Canada-based company, which has offices in Montreal, has already partnered on multiple occasions with the Canadian Space Agency. It's most notable contributions are the design and manufacturing of the Canadarm2 on the \gls{ISS}, as well as the RADARSAT-2 satellite constellation. The current document was made in partnership with \gls{MDA}, in the context of a 6 months thesis-internship in Montreal during which the present project was scoped, planned and executed.
+
+\section{Purpose}
+With the ever decreasing cost of computing power, functional simulation of components and systems has become an integral part of the testing phase in space design. This approach is thus also taken by \gls{SNC} in the context of Dream Chaser, who requires subcontractors like \gls{MDA} to provide simulators of their respective subsystems alongside the subsystem itself. This is done with the intent of simulating, on multiple fronts, an entire launch or mission, from the finite-element thermal analysis of the haul to the behavior of the flight computer mid-mission. 
+
+Once the simulators are all working separately, they are then interfaced together. This results in a compute-intensive platform called the \gls{DCMS}, an important piece in the integration, testing and validation phases of the development. By its virtual nature, the \gls{DCMS} can be ran under different conditions in order to observe the behavior of the spacecraft as a whole in different scenarios. This proves to be of course extremely useful, for example, in the early detection of anomalies or even in the regression testing of software.
+
+Each subcontractor's simulator possesses its own set of requirements, driven by the desired simulation quality and granularity. In that sense, \gls{MDA} is in charge of developing the \gls{BBPSim}, a \gls{SIL} platform for the flight code of the entire communication subsystem, from the antennas to the computing nodes themselves. \gls{BBPSim} acts as some sort of hypervisor, implementing an interface for operating system and hardware utilities to the flight software, that is fundamentally written for an embedded platform. This makes abstraction of the system on which the code is running while keeping all of its functionalities and internal algorithms. As a result, \gls{BBPSim} significantly improves the easiness of interaction with the flight software as well as its testing in a continuous integration pipeline system like Jenkins.
+
+The purpose of this thesis is to design and develop a custom-fit \textit{snapshotting} technique for \gls{BBPSim}. As said previously, the development of the simulator is driven by the requirements derived from its inclusion in the DCMS. The need for a snapshot feature comes from a pair of them, that state that
+\begin{enumerate}
+	\item \gls{BBPSim} shall have the capability of saving its state, or "context", to non-volatile memory.
+	\item \gls{BBPSim} shall be able to restore itself from a state file in non-volatile memory at initialization.
+\end{enumerate} 
+Of course, for one feature to ever be useful, the other must also be present.
+
+
+}

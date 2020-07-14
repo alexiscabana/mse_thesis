@@ -6,9 +6,12 @@
 \usepackage{csquotes}
 \usepackage{graphicx}
 \usepackage{setspace}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{hyperref}
 
 
-\title           	{Development of Snapshot and Fault Injection Techniques within Dream Chaser's Software-in-the-loop Test Framework}
+\title           	{Development of a Snapshotting Technique within Dream Chaser's Software-in-the-loop Test Framework}
 \type            	{Masters thesis}
 \author          	{B.Eng. Alexis Cabana-Loriaux}
 \matriculation   	{0407200}
@@ -24,7 +27,11 @@
 \input{tex/acronyms}
 
 % references are also defined in preamble
-\addbibresource{references.bib}
+\addbibresource{ref/references.bib}
+
+%add custom commands
+\input{tex/commands.tex}
+
 
 \begin{document}
 %First page here
@@ -57,9 +64,8 @@
 
 
 % post-content of thesis
-\printbibliography[
-	heading=bibintoc,
-	title={Whole bibliography}
-]
+%\nocite{*} <- use this to list everything, even stuff not cited
+\renewcommand{\bibname}{References}
+\printbibliography
 
 \end{document}

@@ -6,5 +6,7 @@
 *.run
 *.synctex.gz
 *.xml
+*.bbl
+*.blg
 *.log
 build/*
