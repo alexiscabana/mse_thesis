@@ -1,0 +1,32 @@
+{
+\setlength{\parindent}{2em}
+\chapter{BBPSim Snapshotting - Implementation Analysis}\label{cha:bbpsim-impl}
+How can you package the necessary information to restart a simulation to a past state from any other simulation state? 
+\section{Layer-by-Layer Analysis}
+- what needs to be saved in each layer?
+\section{State File Representation}
+- constraints (- just das variables are ~ 100MB (.bss and .data), so state files are BIG, big file handling in C++ (https://stackoverflow.com/questions/34751873/how-to-read-huge-file-in-c))
+- endianness is better in little endian, machine executing is always little endian (see ICD)
+- Format of file? (binary, xml (using Base64, 8 bit is used to represent 6 bits, 25\% overhead), yaml, pros and cons, binary with a state editor?)
+- how to represent a save (TLV blocks, check other options, first thing to say because from there we derive save and restore)
+
+\section{Save and Restore Strategy}
+- Actually saving SIM modules : doesn't break encapsulation (for c++ is OOP). They are included in an interface CRestorableObject.h. There are some diamond inheritance (so couldn't put all RestorableObject in vector and call all SaveTos), however not a problem since the constructor doesn't do anything and there is no member variable to construct.
+- tried different techniques programmatically
+- strat 1 : many different types of record blocks, each a class  (serialization as overloaded << operator, one for each record block type, code-heavy, too many types of block). Easy saving mechanism : every Sw module in the Sim has to implement the Save(list<blocks>&) method to fill a list of RecordBlocks to put in the binary file. Module-flexible, the managers can save anything they want using common enum for type tagging. And each derived RecordBlocks class can encapsulate its own Serialize() method to know its exact representation in the binary file. We use the Template design pattern for the derived of RecordBlock. they force the serialization of the type + length (with temp patt)+ user only has to provide the serialization of the data itself. (avoids duplication of code + errors)
+- strat 3 : (makeblock but only from one contiguous memory space, +1 rb every call (template makeblock ou bien makeblock(void*)). not good, definition of multiple structs that contain the same fields as the managers, too redundant)
+- strat 4 : Builder-type template to construct blocks) 2 types of blocks, dynamic or static
+- experimented with https://www.boost.org/doc/libs/1_73_0/libs/serialization/doc/index.html but not suitable. There's the boost serializtion library but the class is not self-contained, 
+- how to save (envsaver,mainly not to duplicate data, ram2file strategy, builder template, record blocks, strategy (every simulation module must implement saveto and restorefrom, can recursively save blocks))
+- important for the saving to never be conditional : we must able to predict the length of every block either directly or by reading some elements of it and then making a prediction
+- Error in the save is warning because doesn't affect simulation, but error in restore is 
+- overhead incured by checkpointing mechanism in simulation (block building memory overhead)
+ENVRESTORER : (a type of Iterator design pattern where you query blocks, encapsulates how blocks are created from a state file and handled, hides complexity from managers) At restore, the binary file is loaded in memory and a list of TlvBlocks is again made available to managers to restore to a previous state. a block type is linked to one and only one manager. 
+
+\section{Code Refactor}
+- Refactor of all the previous code. change to STL containers, code before was C disguised as C++. upgraded to c++11
+
+\section{Design Constraints}
+- saving, then restoring and saving again (no stepping) must output the same state file (except the header) as much as possible, not possible because of memory pointers
+- The DAS memory musn't contain any information about addresses of variables in the OS API, because these addresses WILL change from sim to sim
+}

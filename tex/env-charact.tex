@@ -1,0 +1,27 @@
+{
+\setlength{\parindent}{2em}
+\chapter{Software Environment}\label{cha:sim-env}
+
+\section{Requirements}
+\subsection{Customer Requirements}
+\subsection{User Requirements}
+- user requirements by me (FSW as untouched as possible, etc.)
+
+\section{BBPSim Characteristics}
+\subsection{Execution Environment}
+\subsection{Commands}
+\subsection{Interaction Layers}
+- Overview of software architecture of simulator (show picture of layers)
+- explain pthread, posix, they're used as wrapper for mutex in deos.
+\subsection{Shared Object Considerations}
+- Dynamic library loading  https://eli.thegreenplace.net/2011/08/25/load-time-relocation-of-shared-libraries
+- address at which the library is loaded (why always 0x00007fffXXXXXXXX?) https://unix.stackexchange.com/questions/509607/how-a-64-bit-process-virtual-address-space-is-divided-in-linux
+In this case, application continerization is not possible, because we are a library.
+
+\section{FSW Outline}
+\subsection{Modules}
+- anatomy of the typical C module( static global, functions)
+- anatomy of typical task loop in embedded systems 
+\subsection{DEOS Overview}
+deos particularities with preemption
+}

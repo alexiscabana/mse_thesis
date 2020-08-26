@@ -106,7 +106,7 @@
  headsepline,
  nouppercase,
  komastyle
-]{scrpage2}
+]{scrlayer-scrpage}
 
 \RequirePackage{cleveref}
 
