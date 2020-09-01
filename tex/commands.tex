@@ -1,1 +1,18 @@
 \newcommand{\source}[1]{\caption*{\textbf{Source:} {#1}} }
+
+\usepackage{framed}
+\usepackage{quoting}
+\usepackage{color}
+\usepackage{xcolor}
+\definecolor{quotegray}{rgb}{0.85, 0.85, 0.85}
+\colorlet{shadecolor}{quotegray}
+\usepackage{lipsum}
+\newenvironment{shadedquotation}
+{
+	\begin{shaded*}
+	\quoting[leftmargin=0pt, vskip=0pt]
+}
+{
+	\endquoting
+	\end{shaded*}
+}
