@@ -24,29 +24,13 @@ This technique allows the program to save itself while its running, and to resta
 \subsection*{Checkpointing Schemes}
 There are different checkpointing schemes that are adapted to different needs. On one hand, it is possible to checkpoint the application at predetermined intervals $\Delta t$ (i.e every minute). This is useful when applicable, because it puts an upper bound on the amount of data/time loss in a worst case scenario. However, this mitigation method is not always possible for every type of computation. 
 
-The second approach is to do it sporadically. This can be used when it's impossible to predict the amount of time required for a given computation. Unfortunately, it also means that the user doesn't know exactly when checkpoints will occur nor can he upper-bound the maximum amount of data/time loss.
+The second approach is to do it sporadically. This can be used when it's impossible to predict the amount of time required for a given computation. Unfortunately, it also means that the user doesn't know exactly when checkpoints will occur nor can she/he upper-bound the maximum amount of data/time loss.
 
 \subsection*{Applicability to BBPSim}
-Why exactly can these concepts be useful in the case of a simulator like BBPSim? The checkpoint and restart technique is not only applicable to the distributed computing, it can be adapted to fit the needs of multiple kinds programs. At the very least, some of the concepts can be used to design a homemade fault-tolerant feature. In the following sections, some existing \textit{snapshotting} solutions in released software will be investigated. Using available source code, we will see that a checkpoint/restart feature can be implemented at different levels within the execution system. Subsequently, the potential applicability of each implementation will be evaluated. In the end, the analysis will extract a set of working ideas to gather inspiration for the save \& restore in BBPSim.
+Why exactly can these concepts be useful in the case of a simulator like BBPSim? The checkpoint and restart technique is not only applicable to the distributed computing, it can be adapted to fit the needs of multiple kinds programs. At the very least, some of the concepts can serve as inspiration to design a save \& restore feature. In the following sections, some existing \textit{snapshotting} solutions in released software will be investigated. Using available source code, we will see that a checkpoint/restart feature can be implemented at different levels. Subsequently, the potential applicability of each implementation will be evaluated. In the end, the analysis will extract a set of working ideas to gather inspiration for the save \& restore in BBPSim.
 
-
-\section{VirtualBox}\label{sec:virtualbox}
-This open-source software project backed by Oracle is well-known in the virtualization industry. It is a hypervisor, a type of program defined by Red Hat as a
-\begin{shadedquotation}
-	[...] software that creates and runs [one or more] \gls{VM}. A hypervisor, sometimes called a virtual machine monitor (VMM), isolates the hypervisor operating system and resources from the virtual machines and enables the creation and management of those VMs.\cite{online:redhat}
-\end{shadedquotation}
-Indeed, VirtualBox acts as a mediator between a guest OS (the \textit{virtualized} OS) and a host OS. It is labeled as a Type-2 hypervisor, meaning that it is actually a software layer that separates both operating system, as \autoref{fig:layerhyper} shows. VirtualBox is in charge of exposing computer utilities to the guest operating system, like CPU time, RAM allocation, driver and graphics card access, etc. Like most of its counterparts, the hypervisor offers on top of that the possibility of \textit{snapshotting} a virtual machine's current state in order to allow a future restore to exactly this state : the state of the drivers, running process scheduling information, even the screen graphical interface. The feature outputs a sizable file as a result.
-
-\begin{wrapfigure}{r}{0.35\textwidth}
-	\centering \scriptsize
-	\vspace{-12pt}
-	\includesvg[width=0.34\textwidth]{svg/hypervisor}
-	\caption{Abstraction layers for a type-2 hypervisor.}
-	\label{fig:layerhyper}
-\end{wrapfigure}
-This application being open-source, it's possible to dive deeper and investigate the code itself. We are mostly interested here at how VirtualBox handles the saving of guest OS processes and memory, since BBPSim doesn't have a graphical interface nor uses the typical PC peripherals like USB or the audio output.
-
-In the \texttt{src/VBox/}
+\input{tex/sota-virtualbox}
+ 
 
 \section{Checkpoint and Restore in User Space}\label{sec:criu}
 https://github.com/checkpoint-restore/criu

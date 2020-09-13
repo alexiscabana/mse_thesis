@@ -1,12 +1,9 @@
 \newcommand{\source}[1]{\caption*{\textbf{Source:} {#1}} }
 
-\usepackage{framed}
-\usepackage{quoting}
-\usepackage{color}
-\usepackage{xcolor}
+
 \definecolor{quotegray}{rgb}{0.85, 0.85, 0.85}
+\definecolor{pathgray}{rgb}{0.95, 0.95, 0.95}
 \colorlet{shadecolor}{quotegray}
-\usepackage{lipsum}
 \newenvironment{shadedquotation}
 {
 	\begin{shaded*}
@@ -15,4 +12,18 @@
 {
 	\endquoting
 	\end{shaded*}
+}
+
+\newcommand{\pathmono}[1]{\colorbox{pathgray}{\texttt{#1}}}
+\newcommand{\cppsym}[1]{\texttt{#1}}
+\newcommand{\Cpp}{\mbox{C\texttt{++}} }
+\newlength\myheight
+\newlength\mydepth
+\settototalheight\myheight{Xygp}
+\settodepth\mydepth{Xygp}
+\setlength\fboxsep{0pt}
+\newcommand*\inlinegraphics[1]{%
+	\settototalheight\myheight{Xygp}%
+	\settodepth\mydepth{Xygp}%
+	\raisebox{-\mydepth}{\includegraphics[height=1.2\myheight]{#1}}%
 }

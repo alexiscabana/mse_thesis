@@ -1,4 +1,3 @@
-{
 \setlength{\parindent}{2em}
 \chapter{Introduction}\label{cha:intro}
 Since the termination of the Space Shuttle program in 2011, the \gls{NASA} has been turning to other countries and private enterprises for the transportation of cargo to orbit and beyond. The \gls{CRS} program is a good example of this : a public-private partnership in which supplies provided by NASA are launched into orbit to the \gls{ISS} by commercial rockets. Of course, the new "Delivery-as-a-Service" paradigm has spawned a lot of commercial interest all around the world. In the United States, the Dream Chaser program is one of those efforts that continue strengthening the ties between public space agencies and the private sector.
@@ -13,13 +12,13 @@ The \gls{DCCS} is an unmanned, reusable orbital spaceplane intended for the tran
 
 First of all, the system contains a powerful propulsion system made out of a cluster of Orbitec's Vortex engines\cite{online:messier}. This enables self-cruising and orbit correction, instead of being 100\% reliant on the launch provider for exact orbit insertion. Furthermore, this on-board propulsion opens up other possibilities for Dream Chaser deeper than \gls{LEO}, like transporting cargo to the coming Lunar Gateway. 
 
-Secondly, the  spacecraft is partly made reusable by the development of a custom, very resistant airframe by Lockheed Martin. The haul, its wings and landing gear enable \gls{DCCS} to safely land on a runway from \gls{LEO}. With these features, it's of course very easy to compare Dream Chaser to a mini Space Shuttle (see \autoref{fig:dccs_landed}). 
+Secondly, the  spacecraft is partly made reusable by the development of a custom, very resistant airframe by Lockheed Martin. The haul, its wings and landing gear enable \gls{DCCS} to safely land on a runway from \gls{LEO}. With these features, it's of course very easy to compare Dream Chaser to a mini Space Shuttle (see \autoref{fig:dccs-landed}). 
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=0.9\linewidth, keepaspectratio]{art/dream_chaser_landed.jpg}
+	\includegraphics[width=0.9\linewidth, keepaspectratio]{art/dream-chaser-landed.jpg}
 	\caption{Dream Chaser on a runway at sunset.}
-	\label{fig:dccs_landed}
-	\source{Sierra Nevada Corporation \cite{misc:dccs_landed}}
+	\source{Sierra Nevada Corporation \cite{misc:dccs-landed}}
+	\label{fig:dccs-landed}
 \end{figure}
 Finally, its communication subsystem is made of several types of antennas, for encrypted telecommunication with ground stations and the \gls{ISS}. Because docking to the space station is also one the spacecraft's capabilities, a physical communication link is present too. \gls{MDA} has been put in charge of this crucial component's development by \gls{SNC}. 
 
@@ -47,6 +46,3 @@ Save \& restore has considerable advantages from a testing point of view. For in
 Furthermore, another benefit of the feature is that it allows the same hypothetical failures to be replayed over and over again. Since a state file can be restored again and again at will, the interaction between all the different subsystems can be analyzed more in-depth. When in the integration phase, potential inter-system faults can be caught earlier and they are easier to reproduce.  
 
 This thesis will start by giving an overview of such a \textit{snapshotting} concept in the context of other software projects. There has been many successful attempts to create this mechanism in academic papers and open-source programs, instances from which inspiration has been drawn. Then the design and implementation of the feature inside \gls{BBPSim} is discussed in details. The general approach in terms of changing the simulator's software to be make it saveable is explained. After these crucial steps, the integration of the work in the existing testing pipeline as well as its impact on the testing process at MDA are also covered. 
-
-
-}
