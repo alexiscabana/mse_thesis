@@ -92,7 +92,7 @@
  urlcolor   =
 ]{hyperref}
 
-\RequirePackage[xindy, acronym, symbols, shortcuts, numberedsection]{glossaries}
+\RequirePackage[xindy, acronym, symbols, shortcuts, toc, style=super]{glossaries}
 
 
 %% font family: sans serif
