@@ -56,14 +56,12 @@ The state (i.e value) of all the relevant CPU registers at a time $t$ is called 
 \subsection*{RAM Snapshot}
 Another vital aspect of the state save is the dynamic memory aspect. How can VirtualBox completely separate the guest OS from the host without the guest noticing? This is done through the Page Manager (PM), a manager also taken into account by the Saved State Manager at snapshot time. 
 
-\begin{wrapfigure}{l}{0.45\textwidth}
-	\centering \scriptsize
-	\vspace{-12pt}
+\begin{figure}[htbp]
+	\centering
 	\includegraphics[width=0.40\textwidth,keepaspectratio]{art/mem-paging.png}
 	\caption{Linux Mapping of Pages to Page Frames \cite{misc:mem-paging}}
 	\label{fig:mem-paging}
-	\vspace{-12pt}
-\end{wrapfigure}
+\end{figure}
 To better understand the Page Manager's job, a very similar concept can be taken as an example: the memory paging technique used by the Linux operating system. As shown in \autoref{fig:mem-paging}, the way Linux abstracts the hardware from a running program is by offering said program an entire virtual address space as a sandbox. 
 
 This virtual space is divided into fixed-length memory blocks (usually 4kB) called virtual pages that have a one-to-one correspondence to a random block of the same size in physical memory (page frame). Linux abstracts that correspondence with the help of a \gls{MMU} implemented in hardware, which translates virtual addresses into physical ones.

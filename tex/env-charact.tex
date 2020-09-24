@@ -1,10 +1,41 @@
 {
 \setlength{\parindent}{2em}
 \chapter{Software Environment}\label{cha:sim-env}
+Before proceeding to any design, it was important to first thoroughly characterize the setting in which the save \& restore was implemented. Fundamentally, this thesis was an integration project and, without a surprise, the checkpointing feature had to be merged coherently in the previously existing environment.
+
+This chapter better describes the main driving factors in the design of the feature. From user and customer requirements to technical considerations, it serves as the basis on which everything was subsequently built.
 
 \section{Requirements}
-\subsection{Customer Requirements}
-\subsection{User Requirements}
+In the context of the \gls{DCCS}, Sierra Nevada Corporation subcontracted the entire design and implementation of the communications subsystem to \gls{MDA}. \gls{SNC} had clear goals with Dream Chaser, and for this multi-company undertaking to be properly organized, a hierarchical list of requirements had to be produced. The list was then given to the relevant subcontractors so they could guide themselves in the design of their subsystem. The final product could then be analyzed to assess how well it met the expectations. 
+
+In the Dream Chaser program, the main product to be delivered by \gls{MDA} was the \gls{BBP} along with its flight software. However, even though \gls{BBPSim} was treated as a sub-product to be delivered in conjunction, it also possessed its own set of requirement documents.
+
+In the case of this thesis, two types of requirements were driving factors in the design, each with a different scope. Of course, the primary customer requirements from \gls{SNC} had to be followed, but another set was produced in parallel to provide additional guidelines to help the fulfillment of the feature.  
+
+\subsection*{Customer Requirements}
+\textit{Scope: the {BBPSim} framework.}
+
+The customer requirements affected the development of the entire \gls{BBPSim} ecosystem. As a measure of prudence, the integral list is not made available in this thesis. However, many of them related to the development of the checkpointing feature are listed in \autoref{tab:customer-reqs}
+\begin{table}[htbp]
+	\centering
+	\ra{1.2}
+	\begin{tabularx}{\linewidth}{>{\centering}p{2.5cm} X}
+		\toprule
+		{\bfseries Requirement\newline Number} & \textbf{Description}\\
+		\midrule
+		1 & {Access to \gls{FSW} variables}\\
+		\midrule
+		2 & {Choice of state file format}\\
+		\midrule
+		3 & {Well-defined mechanism for restoring from file}\\
+		\bottomrule
+	\end{tabularx}
+	\caption{Division of the thesis work into phases and their milestone.}
+	\label{tab:customer-reqs}
+\end{table}
+
+
+\subsection*{User Requirements}
 - user requirements by me (FSW as untouched as possible, etc.)
 
 \section{BBPSim Characteristics}

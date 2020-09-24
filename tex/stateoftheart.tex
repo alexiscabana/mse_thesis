@@ -29,15 +29,14 @@ The second approach is to do it sporadically. This can be used when it's impossi
 \subsection*{Applicability to BBPSim}
 Why exactly can these concepts be useful in the case of a simulator like BBPSim? The checkpoint and restart technique is not only applicable to the distributed computing, it can be adapted to fit the needs of multiple kinds of programs. At the very least, some of the concepts can serve as inspiration to design a save \& restore feature. In the following sections, some existing \textit{snapshotting} solutions in released software will be investigated. Using available source code, it will be possible to see that a checkpoint/restart feature can be implemented at different levels. Subsequently, the potential applicability of each implementation will be evaluated. In the end, the analysis will extract a set of working ideas to gather inspiration for the save \& restore in BBPSim.
 
-%---state of the art sections
+%---state of the art analysis
 \input{tex/sota-virtualbox}
-  
+\input{tex/sota-bclr}
 
 \section{Checkpoint and Restore in User Space}\label{sec:criu}
 https://github.com/checkpoint-restore/criu
-\section{Berkeley Lab Checkpoint/Restart for Linux}\label{sec:blcr}
-https://crd.lbl.gov/departments/computer-science/class/research/past-projects/BLCR/
-- see also virtualization technology : https://github.com/dmtcp/dmtcp (process-based)
+
+
 
 %https://github.com/dmtcp/dmtcp
 
