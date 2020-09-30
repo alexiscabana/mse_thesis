@@ -8,43 +8,93 @@ This chapter better describes the main driving factors in the design of the feat
 \section{Requirements}
 In the context of the \gls{DCCS}, Sierra Nevada Corporation subcontracted the entire design and implementation of the communications subsystem to \gls{MDA}. \gls{SNC} had clear goals with Dream Chaser, and for this multi-company undertaking to be properly organized, a hierarchical list of requirements had to be produced. The list was then given to the relevant subcontractors so they could guide themselves in the design of their subsystem. The final product could then be analyzed to assess how well it met the expectations. 
 
-In the Dream Chaser program, the main product to be delivered by \gls{MDA} was the \gls{BBP} along with its flight software. However, even though \gls{BBPSim} was treated as a sub-product to be delivered in conjunction, it also possessed its own set of requirement documents.
+In the Dream Chaser program, the main product to be delivered by \gls{MDA} was the \gls{BBP} along with \gls{DAS}, its flight software. However, even though \gls{BBPSim} was treated as a sub-product to be delivered in conjunction, it also possessed its own set of requirement documents.
 
 In the case of this thesis, two types of requirements were driving factors in the design, each with a different scope. Of course, the primary customer requirements from \gls{SNC} had to be followed, but another set was produced in parallel to provide additional guidelines to help the fulfillment of the feature.  
 
 \subsection*{Customer Requirements}
 \textit{Scope: the {BBPSim} framework.}
 
-The customer requirements affected the development of the entire \gls{BBPSim} ecosystem. As a measure of prudence, the integral list is not made available in this thesis. However, many of them related to the development of the checkpointing feature are listed in \autoref{tab:customer-reqs}
+Throughout the thesis work, the customer requirements of the entire \gls{BBPSim} ecosystem were taken as the main drivers to follow for the development. As a measure of legal prudence, the integral list of requirements cannot be made available in this document. \autoref{tab:customer-reqs} lists several of them that relate to the development of the checkpointing feature.  
 \begin{table}[htbp]
+	\vspace{12pt}
 	\centering
-	\ra{1.2}
-	\begin{tabularx}{\linewidth}{>{\centering}p{2.5cm} X}
+	\ra{1.3}
+	\begin{tabularx}{\linewidth}{>{\centering}p{3cm} X}
 		\toprule
 		{\bfseries Requirement\newline Number} & \textbf{Description}\\
 		\midrule
-		1 & {Access to \gls{FSW} variables}\\
+		DCMS-BBP-32 & {The BBP Simulator software shall support real-time (RT) execution whereby BBP FSW tasks are executed at the rate they would be on actual BBP hardware.}\\
 		\midrule
-		2 & {Choice of state file format}\\
+		DCMS-BBP-53 & {The BBP Simulator software shall provide the capability to initialize, step, and terminate.}\\
 		\midrule
-		3 & {Well-defined mechanism for restoring from file}\\
+		DCMS-BBP-122 & {The BBP Simulator software shall provide the capability to save the current state of the model to a file for later use as an initial configuration.}\\
+		\midrule
+		DCMS-BBP-56 & {The BBP Simulator software shall provide the capability to initialize to pre-defined FSW phase, states, and modes within 5 minutes.}\\
+		\midrule
+		DCMS-BBP-121 & {The BBP Simulator shall execute as a 64 bit process.}\\
 		\bottomrule
 	\end{tabularx}
-	\caption{Division of the thesis work into phases and their milestone.}
+	\caption{List of relevant customer requirements for the save \& restore feature of the \gls{BBPSim} system.}
 	\label{tab:customer-reqs}
 \end{table}
 
+From the descriptions, it is possible to see that the above requirements have to do with \gls{BBPSim} as a whole, and not particularly with the save \& restore itself. Nonetheless, they were considered important to take into account. A proper overview of \gls{BBPSim} is given in \autoref{sec:bbpsim-charact}, where these requirements are further discussed in details.
 
 \subsection*{User Requirements}
-- user requirements by me (FSW as untouched as possible, etc.)
 
-\section{BBPSim Characteristics}
-\subsection{Execution Environment}
-\subsection{Commands}
-\subsection{Interaction Layers}
+As mentioned earlier, a list of user requirements was also compiled beforehand, one that was applicable only to the checkpointing feature and thus would further guide the subject of this thesis. 
+
+\begin{table}[htbp]
+	\vspace{12pt}
+	\centering
+	\ra{1.3}
+	\begin{tabularx}{\linewidth}{>{\centering}p{3cm} X}
+		\toprule
+		{\bfseries Requirement\newline Number} & \textbf{Description}\\
+		\midrule
+		U01 & {The save \& restore of the BBP Simulator software shall restore back a simulation state without stability issues on subsequent steps.}\\
+		\midrule
+		U02 & {The save \& restore of the BBP Simulator software shall be implemented without altering the flight software.}\\
+		\midrule
+		U03 & {A state file shall be the only required artifact to restore a BBP Simulator simulation.}\\
+		\bottomrule
+	\end{tabularx}
+	\caption{List of user-imposed requirements for the save \& restore feature of the \gls{BBPSim} system.}
+	\label{tab:user-reqs}
+\end{table}
+
+As it's possible to see in \autoref{tab:user-reqs}, one of the reason these requirements were chosen was to enforce a certain user-friendliness for both the customer and the verification and validation team. In that sense, requirements U01 and U03 focused on that goal: to make the feature easy to use, test and integrate within the V\&V environment. In particular, the inclusion of U03 was driven by the fact that a state file is much easier to manipulate programatically than a workspace or combination of files.
+
+On top of that, the addition of requirement U02 was prompted by the added encapsulation of the task. In the end, adding in a feature to \gls{BBPSim} should not affect the flight software, even if the simulator is its testing framework. The FSW was to be taken as a "black box". Not altering the flight software meant that:
+\begin{enumerate}
+	\item The checkpoint/restore added code would be located in a single repository, decreasing maintenance costs.
+	\item Only one piece of software had to be completely understood, decreasing ramp-up costs.
+	\item Ultimately, much more content could be shared in this paper, because the flight software is regulated by stricter rules.
+\end{enumerate}
+
+\section{BBPSim Characteristics}\label{sec:bbpsim-charact}
+Since the save \& restore feature relied on the existence of the \gls{BBPSim} simulator, it was important to first describe and understand the simulator in details before starting the design phase. For this reason, the present section further demonstrates the capabilities and the operation of \gls{BBPSim}, that served as constraints to the development of the feature.
+
+\subsection*{Code Execution Environment}
+As mentioned earlier in \autoref{sec:intro-background}, \gls{BBPSim} was ordered by \gls{SNC} to be part of a bigger, system-wide simulator called the \gls{DCMS}. In that regard, \gls{BBPSim} was delivered as a simple \pathmono{.so} file, bundled with its relevant headers. The \pathmono{.so} extension refers to the Linux shared object extension, more commonly known as a dynamic library. 
+
+The usage of such an object is fairly straightforward. A Linux software developer wanting to make use of a dynamic library only has to link it with the \inlinecmd{-lLibraryName} flag when compiling its code with GCC. Because the library is already compiled, it also needs to provide "access points" to the functions, classes and types it publicly defines to the compiler. This is done with the help of header files, where the public API of the shared object is revealed. In their own programs, users of a certain dynamic library are only be able to see and use identifiers provided in the header files .
+
+The rationale behind the use of a \pathmono{.so} file as the main delivery method by the Dream Chaser team was relatively simple:
+\begin{itemize}
+	\item It abstracted a lot of code by exposing only a subset of the identifiers to \gls{SNC}.
+	\item Since the computer architecture in which the library executed was known in advance, it could be shipped precompiled in a package to the customer.
+	\item Updating \gls{BBPSim} to a newer version didn't require \gls{SNC} to recompile its own massive \gls{DCMS} system as \gls{BBPSim}'s API didn't change between versions. 
+\end{itemize}
+
+In the context of the \gls{BBP} simulator, the code that was included in \texttt{libBbpSim.so} could be mainly divided in two parts: the flight software (also known as \gls{DAS}, written in C) and the \gls{BBPSim} environment (written in \Cpp). The source files from both domains were compiled for an x86 64-bit architecture and linked together to produce \pathmono{libBbpSim.so}.
+
+\subsection*{Interaction Layers}
 - Overview of software architecture of simulator (show picture of layers)
-- explain pthread, posix, they're used as wrapper for mutex in deos.
-\subsection{Shared Object Considerations}
+\subsection*{Commands}
+sending a step, threads run sequentially
+\subsection*{Shared Object Considerations}\label{sec:dynlib-considerations}
 - Dynamic library loading  https://eli.thegreenplace.net/2011/08/25/load-time-relocation-of-shared-libraries
 - address at which the library is loaded (why always 0x00007fffXXXXXXXX?) https://unix.stackexchange.com/questions/509607/how-a-64-bit-process-virtual-address-space-is-divided-in-linux
 In this case, application continerization is not possible, because we are a library.
@@ -55,4 +105,6 @@ In this case, application continerization is not possible, because we are a libr
 - anatomy of typical task loop in embedded systems 
 \subsection{DEOS Overview}
 deos particularities with preemption
+practically, how pthread, posix, they're used as wrapper for mutex in deos.
+bbpsim re-implements hardware and software utilities.
 }

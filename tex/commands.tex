@@ -15,6 +15,7 @@
 }
 
 \newcommand{\pathmono}[1]{\colorbox{pathgray}{\texttt{#1}}}
+\newcommand{\inlinecmd}[1]{\colorbox{pathgray}{\texttt{#1}}}
 \newcommand{\cppsym}[1]{\texttt{#1}}
 \newcommand{\Cpp}{\mbox{C\texttt{++}} }
 \newlength\myheight
@@ -27,3 +28,4 @@
 	\settodepth\mydepth{Xygp}%
 	\raisebox{-\mydepth}{\includegraphics[height=1.2\myheight]{#1}}%
 }
+\newcommand\labeledcell[2]{#1\def\@currentlabel{#1}\label{#2}}
