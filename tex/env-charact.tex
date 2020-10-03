@@ -85,26 +85,91 @@ The rationale behind the use of a \pathmono{.so} file as the main delivery metho
 \begin{itemize}
 	\item It abstracted a lot of code by exposing only a subset of the identifiers to \gls{SNC}.
 	\item Since the computer architecture in which the library executed was known in advance, it could be shipped precompiled in a package to the customer.
-	\item Updating \gls{BBPSim} to a newer version didn't require \gls{SNC} to recompile its own massive \gls{DCMS} system as \gls{BBPSim}'s API didn't change between versions. 
+	\item Updating \gls{BBPSim} to a newer version didn't require \gls{SNC} to recompile its own massive \gls{DCMS} system as \gls{BBPSim}'s API didn't change between versions. See \autoref{sec:dynlib-considerations} for other  technical considerations of using a dynamic library.
 \end{itemize}
 
-In the context of the \gls{BBP} simulator, the code that was included in \texttt{libBbpSim.so} could be mainly divided in two parts: the flight software (also known as \gls{DAS}, written in C) and the \gls{BBPSim} environment (written in \Cpp). The source files from both domains were compiled for an x86 64-bit architecture and linked together to produce \pathmono{libBbpSim.so}.
+In the context of the \gls{BBP} simulator, the code that was included in the library could be mainly divided in two parts: the flight software (also known as \gls{DAS}, written in C) and the \gls{BBPSim} environment (written in \Cpp). The source files from both domains were compiled for an x86 64-bit architecture and linked together to produce \pathmono{libBbpSim.so}.
 
 \subsection*{Interaction Layers}
-- Overview of software architecture of simulator (show picture of layers)
-\subsection*{Commands}
-sending a step, threads run sequentially
-\subsection*{Shared Object Considerations}\label{sec:dynlib-considerations}
-- Dynamic library loading  https://eli.thegreenplace.net/2011/08/25/load-time-relocation-of-shared-libraries
-- address at which the library is loaded (why always 0x00007fffXXXXXXXX?) https://unix.stackexchange.com/questions/509607/how-a-64-bit-process-virtual-address-space-is-divided-in-linux
-In this case, application continerization is not possible, because we are a library.
+As mentioned earlier, the deliverable to the client had as a goal to provide a suitable environment for the simulated Dream Chaser flight software to be tested on a Linux machine. The two software domains had to co-exist so that a simulation done on said Linux computer would be \underline{functionally equivalent} to running the code on the actual embedded platform. 
 
-\section{FSW Outline}
-\subsection{Modules}
-- anatomy of the typical C module( static global, functions)
-- anatomy of typical task loop in embedded systems 
-\subsection{DEOS Overview}
+As a design guideline, the Dream Chaser team implemented the \gls{BBPSim} environment in multiple layers that interface at different levels with the flight software. How those layers interact together is better shown in \autoref{fig:bbpsim-layers}, where \gls{DAS} is taken as the core component to which the other layers must adapt.
+
+\begin{figure}[htbp]
+	\vspace{12pt}
+	\centering
+	\includesvg[width=0.8\linewidth]{svg/bbpsim-layers}
+	\caption{Placement of the different layers of the BBPSim environment in relation to the flight software and the OS}
+	\label{fig:bbpsim-layers}
+\end{figure}
+
+The way the user communicates with a simulation is through the shared memory. This element of \gls{BBPSim} is the only freely exposed interface to the "outside world". Within the software-in-the-loop framework, the shared memory emulates the presence of hardware communication buses that are located on the embedded platform. It contains space allocated for several messages that are used for bi-directional communication between the user and the flight software. Each message, whether coming from DAS or the user, must be transmitted on one of the emulated bus interfaces of the real \gls{BBP} hardware (CAN, MIL-1553, Ethernet, Serial) and formatted accordingly.
+
+In practice, the shared memory is implemented as a single block of user-provided memory, to which the hardware layer (HW) is given a reference. As an example, when the user wants to transmit a command to the flight software via the CAN bus, it must do so by first formatting the command to fit a CAN message, and then writing at the appropriate CAN bus offset within the shared memory. 
+
+As for the HW layer, it emulates the hardware components and communication modules of the BBP by containing an implementation of the functionalities offered by the BBP in software. Even though the hardware layer technically incorporates the OS layer in \autoref{fig:bbpsim-layers}, it is useful to think of them as being separated for the rest of this thesis.
+
+As stated before, the FSW code is written as if it was executed on an embedded platform. This is why routines in the flight software use the API of a \gls{RTOS} named DEOS, which provides vital embedded system functionalities like mutexes, semaphores, thread creation and scheduling, etc. This type of operating system is incompatible with a regular PC, due to both platforms being considerably different on multiple aspects. This is where the OS layer's role in the simulation becomes relevant. 
+
+The OS layer reimplements all the DEOS functionalities used in DAS, but adapts the implementation to run on a regular Linux machine. It is, as a matter of principle, a "port" of the RTOS to Linux. For example, in a software-in-the-loop simulation, when the flight software wants to create a new thread, a Linux POSIX thread (pthread) is instead spawned by the layer. All the regular DEOS utilities are converted into their Linux equivalent. Additionally, more basic constructs that aren't OS-related, like FIFO queues, are also handled by this layer. \autoref{fig:bbpsim-layers} represents the operating system layer as being comprised inside the hardware layer. This is due to the OS layer being partially dependent on some hardware utilities that the HW layer provides.
+
+In \autoref{sec:fsw-outline}, the interfacing and general interaction between the flight software and the HW and OS layers of BBPSim are explained in more details.
+
+\subsection*{Commands}
+While the shared memory layer of BBPSim offers a channel of communication by transfer of data to and from a running simulation, it is also important to understand how a user is able to control its execution. 
+
+For this purpose, the design of BBPSim includes a set of commands that can be sent by the user. 
+\begin{itemize}
+	\item \textbf{INIT}. Basically initializes the simulation. This is where the user provides a reference to the shared memory block. All simulation modules inside the OS and hardware layers are constructed and initialized. If the user wants to restore a past simulation, it must provide the name of the relevant state file as a parameter. Only called once.
+	\item \textbf{STEP}. Main command of BBPSim. When the user calls this command, BBPSim simulates 20ms of execution on the BBP hardware. In practice, it executes 1 control loop of each DAS thread sequentially, like in \autoref{fig:step-cmd}. After 1 loop, the threads of execution wait again for their turn on the next STEP. The order in which the threads are ran is determined in advance. Between two STEP commands, the user is allowed to change the content of the shared memory to send or read messages. \par
+	\begin{minipage}{\linewidth}
+		\vspace{12pt}
+		\centering
+		\includesvg[width=\linewidth]{svg/step-cmd}
+		\captionof{figure}{Sequential execution of DAS threads in a STEP command}
+		\label{fig:step-cmd}
+		\vspace{12pt}
+	\end{minipage}
+	It is important to reiterate that this sequential execution must still guarantee an execution time that matches the one the hardware to satisfy requirement DCMS-BBP-32 (See \autoref{tab:customer-reqs}).
+	\item \textbf{SAVE}. Saves the state of the simulation to file for a later restore. This is the subject of this thesis. 
+	\item \textbf{TERM}. Terminates the simulation by stopping the waiting threads, freeing up allocated memory and tearing down the simulation modules. Only called once.
+\end{itemize}
+It is important to note that a command cannot be sent to BBPSim if the previous one hasn't finished. By extension, this means that \ul{when the user sends a SAVE command, every DAS thread alive within BBPSim is guaranteed to be in "standby", not executing any code}. 
+
+Concretely, a simulation done with \pathmono{libBbpSim.so} is abstracted to an object. The above commands are sent by calling a member function and the shared memory can be written to or read from between commands.  \autoref{code:example-bbpsim-usage} shows a basic example of how to run a simulation from a user's perspective, and how he or she can manipulate the flight software, through the Shared Memory layer, to bring it in the wanted state.
+\begin{listing}[H]
+	\begin{minted}{c++}
+SharedMemory* sm = new SharedMemory();
+CBbpSim* bbpsim = new CBbpSim();
+bbpsim->Init(sm);
+
+while(!isFinished()) {
+	sm->cantx[0] = NextCanMessage(); //Transmit a CAN message
+	bbpsim->Step();
+	ProcessCanResponse(sm->canrx[0]) //Read simulation CAN output
+}
+
+bbpsim->Term();
+	\end{minted}
+	\caption{Typical usage of a BBPSim simulation object using \pathmono{libBbpSim.so}'s API}
+	\label{code:example-bbpsim-usage}
+\end{listing}
+
+\section{FSW Overview}\label{sec:fsw-outline}
+Implementing and restoring the embedded software simulated inside \gls{BBPSim} required a comprehensive knowledge of what DAS looked like in source code. It was imperative to understand how it was structured to develop a good custom solution.  As part of the effort, this section describes the RTOS used as well as how the code was broken up into modules for better maintenance.
+
+\subsection*{DEOS}
+In \autoref{sec:bbpsim-charact}, the use of a real-time operating system in the flight software was briefly mentioned. Its inclusion in the project was vital for multiple reasons, embedded utilities being one of them. However, since Dream Chaser is a spacecraft project, performance standards in that area were heightened. This meant that not any embedded OS could be suitable and make guarantees about crucial parameters, like timing and responsiveness.
+
+Even though DEOS isn't actually running inside the BBPSim environment, it is still very important to understand how its API works
+
+time- and space-partitioned
+could make guarantees about the stability and the execution
 deos particularities with preemption
 practically, how pthread, posix, they're used as wrapper for mutex in deos.
 bbpsim re-implements hardware and software utilities.
+
+\subsection{Modules}
+- anatomy of the typical C module( static global, functions)
+- anatomy of typical task loop in embedded systems 
 }

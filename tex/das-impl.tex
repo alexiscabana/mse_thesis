@@ -16,5 +16,9 @@ tried several techniques to save/restore execution stacks:
 	Redirection of the OSApiWrapper calls, Extremely useful, because our library is a dynamic object, which means its calls to library functions are always resolved at runtime by looking in the .rel.plt (relocation, Procedure Linkage Table)
 - strat 3 complicated version of longjmp: how to save execution (asm, disassembly of code, save sp, etc.% https://cs.brown.edu/courses/cs033/docs/guides/x64_cheatsheet.pdf)
 \section{Design Constraints}
+\subsection*{Shared Object Considerations}\label{sec:dynlib-considerations}
+- Dynamic library loading  https://eli.thegreenplace.net/2011/08/25/load-time-relocation-of-shared-libraries
+- address at which the library is loaded (why always 0x00007fffXXXXXXXX?) https://unix.stackexchange.com/questions/509607/how-a-64-bit-process-virtual-address-space-is-divided-in-linux
+In this case, application continerization is not possible, because we are a library.
 
 }
