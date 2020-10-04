@@ -24,10 +24,15 @@
 \renewcommand{\listoflistingscaption}{List of Code Samples}
 
 %sets the code formatting for the entire document
-
 \setminted[c++]{
 	linenos=true,
-	tabsize=4
+	tabsize=4,
+	mathescape
+}
+\setminted[c]{
+	linenos=true,
+	tabsize=4,
+	mathescape=true
 }
 
 \newlength\myheight

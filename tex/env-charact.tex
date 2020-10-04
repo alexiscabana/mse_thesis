@@ -109,9 +109,9 @@ In practice, the shared memory is implemented as a single block of user-provided
 
 As for the HW layer, it emulates the hardware components and communication modules of the BBP by containing an implementation of the functionalities offered by the BBP in software. Even though the hardware layer technically incorporates the OS layer in \autoref{fig:bbpsim-layers}, it is useful to think of them as being separated for the rest of this thesis.
 
-As stated before, the FSW code is written as if it was executed on an embedded platform. This is why routines in the flight software use the API of a \gls{RTOS} named DEOS, which provides vital embedded system functionalities like mutexes, semaphores, thread creation and scheduling, etc. This type of operating system is incompatible with a regular PC, due to both platforms being considerably different on multiple aspects. This is where the OS layer's role in the simulation becomes relevant. 
+As stated before, the FSW code is written as if it was executed on an embedded platform. This is why routines in the flight software use the API of a \gls{RTOS} named Deos, which provides vital embedded system functionalities like mutexes, semaphores, thread creation and scheduling, etc. This type of operating system is incompatible with a regular PC, due to both platforms being considerably different on multiple aspects. This is where the OS layer's role in the simulation becomes relevant. 
 
-The OS layer reimplements all the DEOS functionalities used in DAS, but adapts the implementation to run on a regular Linux machine. It is, as a matter of principle, a "port" of the RTOS to Linux. For example, in a software-in-the-loop simulation, when the flight software wants to create a new thread, a Linux POSIX thread (pthread) is instead spawned by the layer. All the regular DEOS utilities are converted into their Linux equivalent. Additionally, more basic constructs that aren't OS-related, like FIFO queues, are also handled by this layer. \autoref{fig:bbpsim-layers} represents the operating system layer as being comprised inside the hardware layer. This is due to the OS layer being partially dependent on some hardware utilities that the HW layer provides.
+The OS layer reimplements all the Deos functionalities used in DAS, but adapts the implementation to run on a regular Linux machine. It is, as a matter of principle, a "port" of the RTOS to Linux. For example, in a software-in-the-loop simulation, when the flight software wants to create a new thread, a Linux POSIX thread (pthread) is instead spawned by the layer. All the regular Deos utilities are converted into their Linux equivalent. Additionally, more basic constructs that aren't OS-related, like FIFO queues, are also handled by this layer. \autoref{fig:bbpsim-layers} represents the operating system layer as being comprised inside the hardware layer. This is due to the OS layer being partially dependent on some hardware utilities that the HW layer provides.
 
 In \autoref{sec:fsw-outline}, the interfacing and general interaction between the flight software and the HW and OS layers of BBPSim are explained in more details.
 
@@ -136,7 +136,7 @@ For this purpose, the design of BBPSim includes a set of commands that can be se
 \end{itemize}
 It is important to note that a command cannot be sent to BBPSim if the previous one hasn't finished. By extension, this means that \ul{when the user sends a SAVE command, every DAS thread alive within BBPSim is guaranteed to be in "standby", not executing any code}. 
 
-Concretely, a simulation done with \pathmono{libBbpSim.so} is abstracted to an object. The above commands are sent by calling a member function and the shared memory can be written to or read from between commands.  \autoref{code:example-bbpsim-usage} shows a basic example of how to run a simulation from a user's perspective, and how he or she can manipulate the flight software, through the Shared Memory layer, to bring it in the wanted state.
+Concretely, a simulation done with \pathmono{libBbpSim.so} is abstracted to an object. The above commands are sent by calling a member function and the shared memory can be written to or read from between commands.  \autoref{code:example-bbpsim-usage} shows a basic example of how to run a simulation from a user's perspective, and how he or she can manipulate the flight software, through the Shared Memory layer, to put the FSW in the wanted state.
 \begin{listing}[H]
 	\begin{minted}{c++}
 SharedMemory* sm = new SharedMemory();
@@ -158,18 +158,80 @@ bbpsim->Term();
 \section{FSW Overview}\label{sec:fsw-outline}
 Implementing and restoring the embedded software simulated inside \gls{BBPSim} required a comprehensive knowledge of what DAS looked like in source code. It was imperative to understand how it was structured to develop a good custom solution.  As part of the effort, this section describes the RTOS used as well as how the code was broken up into modules for better maintenance.
 
-\subsection*{DEOS}
-In \autoref{sec:bbpsim-charact}, the use of a real-time operating system in the flight software was briefly mentioned. Its inclusion in the project was vital for multiple reasons, embedded utilities being one of them. However, since Dream Chaser is a spacecraft project, performance standards in that area were heightened. This meant that not any embedded OS could be suitable and make guarantees about crucial parameters, like timing and responsiveness.
+\subsection*{Deos}
+In \autoref{sec:bbpsim-charact}, the use of a real-time operating system in the flight software was briefly mentioned. Its inclusion in the project was vital for multiple reasons, embedded utilities being one of them. However, since Dream Chaser is a spacecraft project, performance standards in that area were heightened. This meant that not any embedded OS could be suitable and make guarantees about crucial parameters concerning robustness, timing and responsiveness.
 
-Even though DEOS isn't actually running inside the BBPSim environment, it is still very important to understand how its API works
+In the end, Deos was chosen as the real-time operating system for the BBP software. It is a "safety-critical time and space partitioned [...], certifiable real-time operating system (RTOS) for Avionics" designed by DDC-I\cite{on:ddci}. Temporal and spatial partitioning are absolutely necessary in the context of Dream Chaser, because they guarantee that:
+\begin{enumerate}
+	\item Potentially faulty flight code on one partition cannot change data on another one. This prevents fault propagation to different components \cite{reiger}.
+	\item Task scheduling becomes a hard requirement. This results in threads never interfering with the fulfillment of other threads' real-time requisites \cite{rufino}.
+\end{enumerate}
 
-time- and space-partitioned
-could make guarantees about the stability and the execution
-deos particularities with preemption
-practically, how pthread, posix, they're used as wrapper for mutex in deos.
-bbpsim re-implements hardware and software utilities.
+Beyond these capabilities, Deos must also provide an API to use the embedded utilities it provides. Using the RTOS' primitives, from the flight software's perspective, was \ul{only} done through this API. It is this particularity that enabled the OS layer to bind itself to the FSW: by reimplementing the embedded utilities to their counterparts in Linux. \autoref{tab:does-api} gives a list of some of these utilities, covers their related API functions and briefly describes their implementation within \gls{BBPSim}. 
 
-\subsection{Modules}
-- anatomy of the typical C module( static global, functions)
-- anatomy of typical task loop in embedded systems 
+\begin{table}[htbp]
+	\vspace{12pt}
+	\centering
+	\ra{1.3}
+	\begin{tabularx}{\linewidth}{l l X}
+		\toprule
+		{\bfseries Utility} & \textbf{C API Functions} & \textbf{Implementation}\\
+		\midrule
+		\multirow{3}{*}{Mutex}  & \texttt{createMutex()}  & \multirowcell{3}[0pt][l]{Implemented as a mutex from the Linux\\ POSIX threads library (\texttt{pthread_mutex_t}).}\\								
+		&\texttt{lockMutex()}&\\
+		&\texttt{unlockMutex()}&\\
+		\midrule
+		\multirow{3}{*}{Semaphore}  & \texttt{createSemaphore()}  & \multirowcell{3}[0pt][l]{Implemented as a \texttt{sem_t} from the pthread\\ library.}\\								
+		&\texttt{takeSemaphore()}&\\
+		&\texttt{releaseSemaphore()}&\\
+		\midrule
+		\multirow{3}{*}{Scheduling} & \texttt{createThread()}  & \multirowcell{3}[0pt][l]{Abstracted by a Linux POSIX thread.\\ The \texttt{waitUntil*()} functions must be called\\ at each iteration to yield the CPU to the\\ scheduler.}\\
+		&\texttt{waitUntilNextPeriod()}&\\
+		&\texttt{waitUntilNextInterval()}&\\
+		\midrule
+		\multirow{3}{*}{Mailbox} & \texttt{createMailbox()}  & \multirowcell{3}[0pt][l]{Implemented as a simple mutually exclusive,\\ dynamically allocated, custom FIFO queue.}\\
+		&\texttt{receiveMessage()}&\\
+		&\texttt{sendMessage()}&\\
+		\bottomrule
+	\end{tabularx}
+	\caption{Description of the reimplemented API Utilities and their corresponding Linux primitives.}
+	\label{tab:does-api}
+\end{table}
+Covering the entirety of the API would not be useful in this thesis. Although there are more API functions available, the ones above give a good summary of the kind of reimplementation that was done in the OS layer.
+
+\subsection*{FSW Code Characterization}
+As with any project of this scale, a division of the C code into modules had to be done to ensure its maintenance. This is why the Dream Chaser team decided to adhere to a well-known standard of procedural code structure in the embedded systems world. In particular, it is relevant to understand how a simple task loop is designed inside a module when following that standard. 
+\begin{listing}[H]
+	\begin{minted}{c}
+// CanModule.c
+static BOOL isCanInit;
+static mutex_handle_t mut;
+static thread_handle_t th, subth;
+static uint8_t* aPointer = NULL;
+
+status_t CAN_Initialize() {
+	createMutex(&mut);
+	createThread(&th, CAN_Task, NULL);
+	// other initialization goes here ...
+	isCanInit = TRUE;
+	return status_ok;
+}
+void* CAN_Task(void* arg) {
+	// preamble of task goes here ...
+	createThread(&subth, CAN_SomeOtherTask, NULL); //$\label{line16}$
+	while(TRUE) {
+		if(newCanMessages == TRUE) {
+			CAN_ProcessMessages();
+		}
+		waitUntilNextPeriod();
+	}
+}
+	\end{minted}
+	\caption{Typical embedded C module code containing calls to the Deos API.}
+	\label{code:example-task}
+\end{listing}
+
+\autoref{code:example-task} clearly shows two important characteristics of flight software. First, dynamic embedded primitive creation is possible inside another task, not only in the initialization (See line \ref{line16}). Secondly, as mentioned in \autoref{tab:does-api}, the completion of one task loop must end with a call to \cppsym{waitUntilNextPeriod()} that yields the CPU to Deos' scheduler. This call is made mandatory by the RTOS, with the aim of correctly partitioning all the tasks' CPU time, preempting them as necessary. It should be noted that the list of parameters shown in the Deos functions was deliberately shortened for the sake of clarity. 
+
+The characterization of DAS threads code is important in the context of this thesis, because, on one hand, it demonstrates the basic interaction of the flight software with its simulation environment. On the other hand, it also reveals at which point, in a given task routine, the execution moves from the flight software domain to the BBPSim domain, where the Deos utilities are reimplemented. Being aware of when BBPSim is in control of the execution was especially important in the design of the save \& restore, because requirement U02 prevented the modification of DAS code. Thus, the design of the feature had to bend to this constraint.
 }
