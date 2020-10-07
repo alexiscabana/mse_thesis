@@ -2,7 +2,11 @@
 *.bcf
 *.out
 *.txt
+*.toc
 *.pdf
+*.lof
+*.lol
+*.lot
 *.run
 *.synctex.gz
 *.xml

@@ -4,10 +4,10 @@ Since the termination of the Space Shuttle program in 2011, the \gls{NASA} has b
 
 \section{The Dream Chaser program}
 This thesis' scope is entirely contained within the Dream Chaser project. Therefore, the spacecraft and its design is the main subject. 
-\subsection{History}
+\subsection*{History}
 Conceptualized in 2004 by SpaceDev, the \gls{DCCS} program was officially kick-started by \gls{SNC} in 2010, following its acquisition of SpaceDev in 2008\cite{online:fikes}. Seeing the potential and future possibilities of the transportation system, NASA then awarded funding for the project as part of their \gls{CCDev} program, furthering the development efforts. As \gls{SNC} started breaking down the spacecraft into several sub-systems, it also started subcontracting their development to other companies. So far, the first flight to the \gls{ISS} is officially scheduled to take place in late 2021\cite{online:kanayama}.
 
-\subsection{Features}
+\subsection*{Features}
 The \gls{DCCS} is an unmanned, reusable orbital spaceplane intended for the transportation of both pressurized and unpressurized cargo to and from the \gls{ISS}. It contains many features that make it a very interesting solution for different kinds of space needs. 
 
 First of all, the system contains a powerful propulsion system made out of a cluster of Orbitec's Vortex engines\cite{online:messier}. This enables self-cruising and orbit correction, instead of being 100\% reliant on the launch provider for exact orbit insertion. Furthermore, this on-board propulsion opens up other possibilities for Dream Chaser deeper than \gls{LEO}, like transporting cargo to the coming Lunar Gateway\cite{online:foust}.
@@ -46,3 +46,11 @@ Furthermore, another benefit of the feature is that it allows the same hypotheti
 
 \section{Thesis Overview TO BE UPDATED}
 This thesis will start by giving an general idea of such a \textit{snapshotting} concept in the context of other software projects. There has been many successful attempts to create this mechanism in academic papers and open-source programs, instances from which inspiration has been drawn. Then, the design and implementation of the feature inside \gls{BBPSim} is discussed in details. The general approach in terms of changing the simulator's software to make it saveable is explained. After these crucial steps, the integration of the work in the existing testing pipeline as well as its impact on the testing process at MDA are also covered. 
+
+The rest of this paper is organized as follows. In Section 2, we present background
+for and define the problem. In Section 3, we define some terminology and describe
+our basic approach. In Section 4, we discuss some of the difficulties of adding faulttolerance to MPI programs. In Sections 5 and 6 we present non-blocking checkpointing
+protocols for point-to-point and collective communication, respectively. In Section 7,
+we discuss how our system saves the sequential state of each process. In Section 8, we
+present performance results of our system. In Section 9 we discuss related work, and in
+Section 10 we describe future work. In Section 11, we offer some conclusions.

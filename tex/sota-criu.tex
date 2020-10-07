@@ -1,0 +1,91 @@
+\section{Checkpoint and Restore in User Space}\label{sec:criu}
+As mentioned previously, the problem of checkpointing a computer program can be solved at multiple levels depending on the needs. The approach that was taken by VirtualBox is very powerful, but it has major drawbacks:
+\begin{enumerate}
+	\item \textbf{Overhead processing}. The fact that an entire system gets simulated implies that virtualizing an operating system with a type-2 hypervisor like VirtualBox is basically an overhead cost on executing the program. 
+	\item \textbf{Granularity}. It checkpoints the whole computer's state instead of one program. This is often too much granularity and can result in very large snapshot files. In the case of \gls{BBPSim}, this would be quite excessive.
+	\item \textbf{Dependence on an hypervisor}. If the execution of the program had to happen inside a virtualized operating system, a simulation of the \gls{BBP} would have to rely on the use of an hypervisor. This not desirable, especially from the client's perspective.
+\end{enumerate}
+
+However, some other techniques can circumvent these limitations by taking by using a differing degree of checkpointing transparency, that is, at which abstraction layer the checkpoint takes place. Walters and Chaudhary define those layers as follows: 
+\begin{shadedquotation}
+\begin{enumerate}
+	\item Hardware-level, additional hardware is incorporated into the processor to
+save state.
+	\item Kernel-level, the operating system is primarily responsible for checkpointing
+running programs.
+	\item User-level, a checkpointing library is linked into a program that will be responsible for checkpointing the program independent of the programmer.
+	\item Application-level, the checkpointing code is inserted directly into the application by a programmer/preprocessor.
+\end{enumerate}
+\cite{paper:app-level-chkpt}
+\end{shadedquotation}
+
+\gls{CRIU} is one those attempts at creating a user-friendly method for checkpointing a Linux program. It is an open-source program \cite{online:criucode} implemented at the user-level, meaning that a piece of software has to run in parallel to the program itself. CRIU has the benefit of not needing to run privileged instructions like a kernel-level checkpointing program would do. However, it still needs a bit of cooperation from the Linux kernel for certain operations.
+
+\subsection*{Overview}
+\gls{CRIU}'s solution is completely different from the one seen in \autoref{sec:virtualbox}, where saving happens for every program running in the guest OS. It bases itself on the fact that it is possible for a user-linked checkpointer library to:
+\begin{itemize}
+	\item Hook on a checkpointee's system calls during its execution.
+	\item Alter the relevant system calls before they get sent to the OS.
+	\item Keep track of which resources the checkpointee possesses or operates on with the help of the kernel.
+\end{itemize}
+The action of saving a program is managed by a remote procedure call (RPC) daemon, which runs in background and executes a "dump" (checkpoint) of a given program. 
+\begin{figure}[htbp]
+	\centering \small
+	\includesvg[width=0.75\textwidth]{svg/criu}
+	\caption{Location of the different layers of the CRIU saving ecosystem.}
+	\label{fig:layercriu}
+\end{figure}
+
+There are several different ways to use \gls{CRIU}. An application-centric use case is shown in \autoref{fig:layercriu}. First, to access the required utilities for checkpointing, the application code needs to have access to the library's API at compile-time. At run-time, the \pathmono{libcriu.so} is dynamically linked to the code and CRIU starts to monitor the application's resources by intercepting low-level activity (usually Linux system calls). Then, it alters the calls to give the access to data normally application-private. This management layer is the key to monitoring the actions of the checkpointee and the focal point of the CRIU environment.
+
+Sending a "dump" command from the application's code may be done via C API calls to CRIU's dynamic library:
+\begin{minted}{c}
+int criu_dump(void);
+\end{minted}
+This function is called programatically by the running application to checkpoint itself. It is an abstraction for remote procedure calls that are sent to the CRIU ecosystem. Once those commands are initiated, the \gls{CRIU} RPC daemon outputs a series of files containing sufficient information to restart back the application at that point. Data concerning the execution state of child threads and processes, as well as the different virtual address spaces' memory pages are part of the content of the output files.
+
+At restore time, the checkpointee can call another C API function to do so: 
+\begin{minted}{c}
+int criu_restore(void);
+\end{minted}
+This fully restores the old application's state: virtual address space, registers, thread and process IDs, file descriptors, signals. Basically everything not related to sockets or serial ports is put back the way it was.
+
+Beside that, an external user can also control the program from outside, using shell commands that connect directly to the RPC daemon:
+\begin{minted}{bash}
+criu dump -D <outdir> -t <pid>
+criu restore -D <outdir>
+\end{minted}
+
+\subsection*{Non-volatile Memory Snapshot}
+Because Checkpoint and Restore in User Space doesn't operate as an entire layer directly under the program to checkpoint, and because the changes in the Linux file system are persistent from one program run to another, there is no need for CRIU to save all the operations made on disk like VirtualBox. 
+
+There is however an edge case when the program is saved while it possesses a handle to an opened file. In Linux, because every file operation is done through system calls, the interception layer is able to catch the relevant file's path. At restore, CRIU reopens the same files or, if the files aren't there anymore, invalidates the handle variables (in C: \mintinline[]{c}|FILE* fd;|). 
+
+\hfill\textit{Relevant file }: \pathmono{criu/fdstore.c}.
+
+\subsection*{CPU State and Execution Snapshot}
+As stated previously, Checkpoint and Restore in User Space is able to take a snapshot of an entire tree of process IDs (pid). Inside the kernel, these pids represent an identifier given to all the threads of execution currently active inside Linux. Since each thread is composed of its own context with its own registers set values, CRIU must save the register set of all the threads that own an identifier related to the checkpointed program.
+
+Once again, the process is made much more easier because of CRIU's interception layer. Since it is registered as a "tracer" in relation to the checkpointee, it is able to send commands to the Linux kernel to get the registers of all the threads that should be saved. This is done using the \mintinline[]{c}|ptrace()| process-to-process interface.
+\begin{shadedquotation}
+The ptrace() system call provides a means by which one process (the "tracer") may observe and control the execution of another process (the "tracee"), and examine and change the tracee's memory and registers.  It is primarily used to implement breakpoint debugging and system call tracing.
+\cite{on:ptrace}
+\end{shadedquotation}
+Since CRIU is registered as a tracer, it is possible for it to gather the registers of the application's threads simply by referring directly to Linux. This can be done simply with:
+\begin{minted}{c}
+ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &regs);
+\end{minted}
+The registers CRIU then gets depends on the architecture of the computer. Nevertheless, this call requires the traced thread to be stopped in order to succeed.
+
+\hfill\textit{Relevant file (x86-64)}: \pathmono{criu/compel/arch/aarch64/src/lib/infect.c}.
+
+\subsection*{RAM Snapshot}
+From CRIU's perspective, memory inside the \gls{VMA} of the traced process is handed out by the OS in pages (about 4kB). In fact, the complete set of virtual pages that the tracee possesses is required for the checkpointing program to restore it in a stable condition. Incidentally, the Linux operating system provides a very useful API in that regard:
+\begin{minted}{bash}
+pmap -x <pid>
+\end{minted}
+The command lists the address and size of the different allocated sections inside the tracee's \gls{VMA} range. In addition, the utility gives the "dirtyness"  (whether the section has once been written to), the permissions and even the mapping (if the section is code, stack, shared object, etc.) each section is associated with. The usage of \mintinline[]{bash}|pmap| doesn't require elevated privileges. However, since a read-write access to the content of the memory pages from other applications is forbidden for security reasons, CRIU is required to "be present" inside the checkpointee's virtual memory address range. This is the reason why \pathmono{libcriu.so} has to be linked in the compilation phase and loaded at runtime. 
+
+When executing a "dump" operation, CRIU fetches the list of memory pages part of the checkpointee's VMA range and saves them one-by-one. 
+
+\hfill\textit{Relevant file }: \pathmono{criu/mem.c}.
