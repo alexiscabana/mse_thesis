@@ -1,0 +1,79 @@
+\section{Cornell Checkpoint Compiler (C\textsuperscript{3})}\label{sec:c3}
+In the previous sections, various approaches for checkpointing an application from an outside entity were explained. In particular, it was shown in \autoref{sec:virtualbox} that VirtualBox interprets the computer instructions that run on the guest operating system, and transforms them to host-runnable instructions via binary translation, keeping a reference to the resources allocated for the guest. 
+Then, \autoref{sec:criu} showed how an outside checkpointing program could layer itself between the checkpointee and the OS, in order to register their important interactions related to resources access and allocation. 
+
+From the checkpointee's point of view, both of these techniques never really have a direct effect. They divert and reinterpret the instructions, resource usage, etc., but never influence the internal algorithms functionally. The program always yields the same result.
+
+Although these methods of checkpointing have big transparency benefits by not modifying the program, in the context of big distributed systems, where there can be many millions CPU core, their caveats are amplified:
+\begin{itemize}
+	\item VirtualBox's snapshot size is a huge bottleneck. For each computer, there would be several gigabytes of RAM to save, which quickly becomes unpractical. In addition, for high performance applications, the overhead of running the programs in "containers" OS might outweigh the benefits of modularity.
+	\item Similarly, CRIU's method would also output state files that are too big to handle efficiently. 
+\end{itemize} 
+
+The Cornell Checkpoint Compiler is an answer to those problems. It is a program that automates the embedding of application-level checkpoints in any type of C program, and does so in a transparent manner to the user. C3 is a kind of pre-compiler, a program comparable to a compiler, that takes as input C source code. But unlike a compiler that outputs executable code, C3 actually produces source code. The original C source code is pre-compiled into C source code that supports application-level checkpointing for this particular program.
+
+In user-level and kernel-level checkpointing scheme, because the external actors are not aware of how exactly the checkpointed program operates, they must participate as outsiders and act passively in the checkpointing process. The C\textsuperscript{3} pre-compiler builds the concept of checkpointing inside the application itself, before the actual compilation. This has huge benefits:
+\begin{enumerate}
+	\item The save \& restore is completely architecture-independent. It doesn't matter if the program was saved by an x86 computer and then restored on ARM.
+	\item The state file produced as the result of a save is as small is it can be. It gathers only the bare minimum it needs to come back to where it left. At big scales, the amount of memory space required for a checkpoint is much smaller than in the case of VirtualBox, for example.
+\end{enumerate}
+
+To properly transform the original code of the application during the pre-compilation phase, C\textsuperscript{3} provides means of saving key elements.
+
+\subsection*{Pre-compilation Process}
+An application that wants to take profit of this checkpointing mechanism only has to indicate via a simple C function call that a checkpoint could be taken at this point in the execution by the C\textsuperscript{3} environment. A quick demonstration is shown in \autoref{code:transformation-c3}.
+
+\begin{listing}[htpb]
+\centering
+\begin{minipage}{.5\textwidth}
+\begin{minted}{c}
+void aFunction() {
+	int x;
+	//...
+	ccc_potential_checkpoint();
+	//...
+	ccc_potential_checkpoint();
+}
+\end{minted}
+\centering
+\includesvg[width=.4\linewidth]{svg/arrow}
+\end{minipage}%
+\begin{minipage}{.5\textwidth}
+\begin{minted}{c}
+void aFunction() {
+	int x;
+	if(RESTARTING) { //$\label{beg-rest}$
+		x = PS.top();
+		switch(x){
+		case 1: 
+			goto label_1;
+		case 2: 
+			goto label_2;
+		}
+	}//$\label{end-rest}$
+	if(checkpoint_time) {
+		PS.push(1);
+		take_checkpoint();
+label_1:
+		PS.pop();
+	}
+	if(checkpoint_time) {
+		PS.push(2);
+		take_checkpoint();
+label_2:
+		PS.pop();
+	}
+}
+\end{minted}
+\end{minipage}
+\caption{Pre-compilation of a simple function (left) into checkpointable code (right) with the C\textsuperscript{3} pre-compiler\cite{online:c3-ppt}}
+\label{code:transformation-c3}
+\end{listing}
+
+There are multiple concepts included in this example. First, it's possible to see that after the stack variables declaration, C\textsuperscript{3} prepends a section of "restarting instructions" (lines \ref{beg-rest} to \ref{end-rest}) to the function body. This is done with the intent of jumping back, with the help of C labels, to the exact point where the last checkpoint happened as soon as the execution reaches the beginning of the function. 
+
+Secondly, it is also possible to see the usage of the \textit{position stack} (PS) in the sample. In C\textsuperscript{3}, this globally available object is, in reality, an abstract representation of the state of the call stack and its stack variables. When a checkpoint occurs, the current function being executed pushes its local variables and execution state onto the PS. Later when restoring, the PS has its objects popped one by one to replace both the call stack of the thread and the local variables in each function call. 
+
+\subsection*{Heap Allocation and Pointers Handling}
+
+It does have some limitations, hardware- and driver-related operations can't be checkpointed
