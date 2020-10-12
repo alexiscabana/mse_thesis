@@ -33,4 +33,68 @@ Why exactly can these concepts be useful in the case of a simulator like BBPSim?
 \input{tex/sota-criu}
 \input{tex/sota-c3}
 
+\section{Conclusion}
+For this thesis, three existing solutions for checkpointing of applications were investigated, both open-source and proprietary. Even though many other existing projects provide a solution to the save \& restore problem, it was considered best here to present those which introduced the most promising concepts that could be applied in the case of \gls{BBPSim}. 
+
+By considering the requirements, constraints and characteristics of \gls{BBPSim} presented in sections \ref{sec:reqs} and \ref{sec:bbpsim-charact}, it is possible to make enlightened design decisions. In that regard, \autoref{tab:solutions-summary} summarizes the investigation by presenting the benefits and drawbacks of some of the concepts included in each solution when applied to the implementation of the save \& restore feature.
+
+\begin{table}[htbp]
+	%\vspace{12pt}
+	\centering
+	\ra{1.2}
+	\begin{tabularx}{\linewidth}{l X X}
+		\toprule
+		{\bfseries Solution} & {\bfseries\textcolor{benefitsheader}{Benefits}}& {\bfseries\textcolor{drawbacksheader}{Drawbacks}}\\
+		\midrule
+		VirtualBox &
+		\csname @minipagetrue\endcsname 
+		\begin{itemize}[leftmargin=*]
+			\item Elegant abstraction model when gathering required components for a save. Scalable and simple.
+			\item Promising low-level CPU state snapshotting approach.
+		\end{itemize} & 
+		\csname @minipagetrue\endcsname 
+		\begin{itemize}[leftmargin=*]
+			\item Encapsulation of the entire machine is a quite extreme solution.
+			\item RAM snapshots design accumulates the entirety of RAM content. The resulting state files are very large ($>$1GB).
+		\end{itemize}\\
+		\midrule
+		CRIU & 
+		\csname @minipagetrue\endcsname 
+		\begin{itemize}[leftmargin=*]
+			\item Easy access to saving API.		
+			\item Uncomplicated saving and restoring of opened file.
+			\item General approach doesn't force an execution environment on the client. 
+			\item CPU registers are easily accessed and saved, although this requires threads to be in standby.
+		\end{itemize} & 
+		\csname @minipagetrue\endcsname 
+		\begin{itemize}[leftmargin=*]
+			\item Intercepting several system call can become very difficult to properly handle.
+			\item RAM snapshots can quickly become large.
+			\item The RPC daemon, albeit modular, is excessive when the source code of the application can be modified.
+		\end{itemize}\\
+		\midrule
+		C\textsuperscript{3} & 
+		\csname @minipagetrue\endcsname 
+		\begin{itemize}[leftmargin=*]
+			\item Exclusive saving of necessary variables results in small state file sizes.
+			\item Notable approach of injecting code at application build time.
+			\item Altering the code directly is applicable with some layers of BBPSim.
+			\item Concept of copying back the stack at same \gls{VMA} is an efficient way of solving the pointers problem.
+		\end{itemize} & 
+		\csname @minipagetrue\endcsname 
+		\begin{itemize}[leftmargin=*]
+			\item Implementation of an entire pre-compiler is not feasible in the scope of thesis.
+		\end{itemize}\\
+		\bottomrule
+	\end{tabularx}
+	\caption{Evaluation of useful and unsuitable concepts in existing save \& restore solutions.}
+	\label{tab:solutions-summary}
+\end{table}
+
+The solutions presented could all be potentially adequate as an implementation for state checkpoint and restart. However, many factors restrict the possibilities. For instance, the limited amount of time to complete this thesis forces the implementation to be customized for \gls{BBPSim}, and not "one size fits all" like all the programs presented in this section. 
+
+While a certain control over its source code is guaranteed, the fact that BBPSim is delivered as a dynamic library also limits how it can control the specifics of the application that links against it and certain kernel-based entities. On top of that, because a delivery to \gls{SNC} implies that the feature should force as fewer constraints as possible on the customer, the addition of the checkpointing mechanism should not be imposing an additional environment layer. This highly decreases the appeal of the concepts included in the first two presented solution.
+
+In the following chapter, the development methods used throughout the completion of this thesis are described. 
+
 }

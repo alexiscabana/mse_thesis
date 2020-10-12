@@ -1,10 +1,12 @@
-\newcommand{\source}[1]{\caption*{\textbf{Source:} {#1}} }
-
-\newcommand{\ra}[1]{\renewcommand{\arraystretch}{#1}}
+% colors
 \definecolor{quotegray}{rgb}{0.85, 0.85, 0.85}
 \definecolor{pathgray}{rgb}{0.95, 0.95, 0.95}
 \definecolor{cppcodebg}{rgb}{0.95, 0.95, 0.95}
+\definecolor{benefitsheader}{rgb}{0.31,0.43,0.24}
+\definecolor{drawbacksheader}{rgb}{0.52,0.24,0.22}
 \colorlet{shadecolor}{quotegray}
+
+% new environments
 \newenvironment{shadedquotation}
 {
 	\begin{shaded*}
@@ -15,6 +17,8 @@
 	\end{shaded*}
 }
 
+%commands used throughout the document
+\newcommand{\ra}[1]{\renewcommand{\arraystretch}{#1}}
 \newcommand{\pathmono}[1]{\colorbox{pathgray}{\texttt{#1}}}
 \newcommand{\inlinecmd}[1]{\colorbox{pathgray}{\texttt{#1}}}
 \newcommand{\cppsym}[1]{\texttt{#1}}
@@ -22,6 +26,11 @@
 \renewcommand{\listingscaption}{Code sample}
 \providecommand*{\listingautorefname}{Code sample}
 \renewcommand{\listoflistingscaption}{List of Code Samples}
+\newcommand*\inlinegraphics[1]{%
+	\settototalheight\myheight{Xygp}%
+	\settodepth\mydepth{Xygp}%
+	\raisebox{-\mydepth}{\includegraphics[height=1.2\myheight]{#1}}%
+}
 
 %sets the code formatting for the entire document
 \setminted[c++]{
@@ -37,14 +46,10 @@
 \setminted[bash]{
 	linenos=true
 }
+
+% array lengths and others
 \newlength\myheight
 \newlength\mydepth
 \settototalheight\myheight{Xygp}
 \settodepth\mydepth{Xygp}
 \setlength\fboxsep{0pt}
-\newcommand*\inlinegraphics[1]{%
-	\settototalheight\myheight{Xygp}%
-	\settodepth\mydepth{Xygp}%
-	\raisebox{-\mydepth}{\includegraphics[height=1.2\myheight]{#1}}%
-}
-\newcommand\labeledcell[2]{#1\def\@currentlabel{#1}\label{#2}}

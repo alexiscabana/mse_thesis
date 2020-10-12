@@ -1,4 +1,4 @@
-\section{Checkpoint and Restore in User Space}\label{sec:criu}
+\section{Checkpoint and Restore in User Space (CRIU)}\label{sec:criu}
 As mentioned previously, the problem of checkpointing a computer program can be solved at multiple levels depending on the needs. The approach that was taken by VirtualBox is very powerful, but it has major drawbacks:
 \begin{enumerate}
 	\item \textbf{Overhead processing}. The fact that an entire system gets simulated implies that virtualizing an operating system with a type-2 hypervisor like VirtualBox is basically an overhead cost on executing the program. 

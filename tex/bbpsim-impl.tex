@@ -22,7 +22,9 @@ but not suitable. There's the boost serializtion library but the class is not se
 - important for the saving to never be conditional : we must able to predict the length of every block either directly or by reading some elements of it and then making a prediction
 - Error in the save is warning because doesn't affect simulation, but error in restore is 
 - overhead incured by checkpointing mechanism in simulation (block building memory overhead)
-ENVRESTORER : (a type of Iterator design pattern where you query blocks, encapsulates how blocks are created from a state file and handled, hides complexity from managers) At restore, the binary file is loaded in memory and a list of TlvBlocks is again made available to managers to restore to a previous state. a block type is linked to one and only one manager. 
+ENVRESTORER : (a type of Iterator design pattern where you query blocks, encapsulates how blocks are created from a state file and handled, hides complexity from managers) At restore, the binary file is loaded in memory and a list of TlvBlocks is again made available to managers to restore to a previous state. a block type is linked to one and only one manager. Check for bbpsim version, do a decision state diagram
+
+\section{\Cpp Interface}
 
 \section{Code Refactor}
 - Refactor of all the previous code. change to STL containers, code before was C disguised as C++. upgraded to c++11

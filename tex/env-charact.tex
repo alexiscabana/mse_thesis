@@ -1,11 +1,11 @@
 {
 \setlength{\parindent}{2em}
-\chapter{Software Environment}\label{cha:sim-env}
+\chapter{BBPSim Framework Characterization}\label{cha:sim-env}
 Before proceeding to any design, it was important to first thoroughly characterize the setting in which the save \& restore was implemented. Fundamentally, this thesis was an integration project and, without a surprise, the checkpointing feature had to be merged coherently in the previously existing environment.
 
 This chapter better describes the main driving factors in the design of the feature. From user and customer requirements to technical considerations, it serves as the basis on which everything was subsequently built.
 
-\section{Requirements}
+\section{Requirements}\label{sec:reqs}
 In the context of the \gls{DCCS}, Sierra Nevada Corporation subcontracted the entire design and implementation of the communications subsystem to \gls{MDA}. \gls{SNC} had clear goals with Dream Chaser, and for this multi-company undertaking to be properly organized, a hierarchical list of requirements had to be produced. The list was then given to the relevant subcontractors so they could guide themselves in the design of their subsystem. The final product could then be analyzed to assess how well it met the expectations. 
 
 In the Dream Chaser program, the main product to be delivered by \gls{MDA} was the \gls{BBP} along with \gls{DAS}, its flight software. However, even though \gls{BBPSim} was treated as a sub-product to be delivered in conjunction, it also possessed its own set of requirement documents.
@@ -73,7 +73,7 @@ On top of that, the addition of requirement U02 was prompted by the added encaps
 	\item Ultimately, much more content could be shared in this paper, because the flight software is regulated by stricter rules.
 \end{enumerate}
 
-\section{BBPSim Characteristics}\label{sec:bbpsim-charact}
+\section{Architecture Characteristics}\label{sec:bbpsim-charact}
 Since the save \& restore feature relied on the existence of the \gls{BBPSim} simulator, it was important to first describe and understand the simulator in details before starting the design phase. For this reason, the present section further demonstrates the capabilities and the operation of \gls{BBPSim}, that served as constraints to the development of the feature.
 
 \subsection*{Code Execution Environment}
@@ -88,7 +88,7 @@ The rationale behind the use of a \pathmono{.so} file as the main delivery metho
 	\item Updating \gls{BBPSim} to a newer version didn't require \gls{SNC} to recompile its own massive \gls{DCMS} system as \gls{BBPSim}'s API didn't change between versions. See \autoref{sec:dynlib-considerations} for other  technical considerations of using a dynamic library.
 \end{itemize}
 
-In the context of the \gls{BBP} simulator, the code that was included in the library could be mainly divided in two parts: the flight software (also known as \gls{DAS}, written in C) and the \gls{BBPSim} environment (written in \Cpp). The source files from both domains were compiled for an x86 64-bit architecture and linked together to produce \pathmono{libBbpSim.so}.
+In the context of the \gls{BBP} simulator, the code that was included in the library could be mainly divided in two parts: the flight software (also known as \gls{DAS}, written in procedural C) and the \gls{BBPSim} environment (written in object-oriented \Cpp). The source files from both domains were compiled for an x86 64-bit architecture and linked together to produce \pathmono{libBbpSim.so}.
 
 \subsection*{Interaction Layers}
 As mentioned earlier, the deliverable to the client had as a goal to provide a suitable environment for the simulated Dream Chaser flight software to be tested on a Linux machine. The two software domains had to co-exist so that a simulation done on said Linux computer would be \underline{functionally equivalent} to running the code on the actual embedded platform. 
@@ -155,7 +155,7 @@ bbpsim->Term();
 	\label{code:example-bbpsim-usage}
 \end{listing}
 
-\section{FSW Overview}\label{sec:fsw-outline}
+\section{Flight Software Specificities}\label{sec:fsw-outline}
 Implementing and restoring the embedded software simulated inside \gls{BBPSim} required a comprehensive knowledge of what DAS looked like in source code. It was imperative to understand how it was structured to develop a good custom solution.  As part of the effort, this section describes the RTOS used as well as how the code was broken up into modules for better maintenance.
 
 \subsection*{Deos}
@@ -199,7 +199,7 @@ Beyond these capabilities, Deos must also provide an API to use the embedded uti
 \end{table}
 Covering the entirety of the API would not be useful in this thesis. Although there are more API functions available, the ones above give a good summary of the kind of reimplementation that was done in the OS layer.
 
-\subsection*{FSW Code Characterization}
+\subsection*{Source Code Characterization}
 As with any project of this scale, a division of the C code into modules had to be done to ensure its maintenance. This is why the Dream Chaser team decided to adhere to a well-known standard of procedural code structure in the embedded systems world. In particular, it is relevant to understand how a simple task loop is designed inside a module when following that standard. 
 \begin{listing}[H]
 	\begin{minted}{c}
