@@ -1,10 +1,10 @@
 {
 \setlength{\parindent}{2em}
-\chapter{BBPSim Snapshotting - Implementation Analysis}\label{cha:bbpsim-impl}
+\chapter{BBPSim Snapshotting}\label{cha:bbpsim-impl}
 How can you package the necessary information to restart a simulation to a past state from any other simulation state? 
 \section{Layer-by-Layer Analysis}
 - what needs to be saved in each layer?
-\section{State File Representation}
+\section{State File Format}
 - constraints (- just das variables are ~ 100MB (.bss and .data), so state files are BIG, big file handling in C++ (https://stackoverflow.com/questions/34751873/how-to-read-huge-file-in-c))
 - endianness is better in little endian, machine executing is always little endian (see ICD)
 - Format of file? (binary, xml (using Base64, 8 bit is used to represent 6 bits, 25\% overhead), yaml, pros and cons, binary with a state editor?)
@@ -20,9 +20,12 @@ How can you package the necessary information to restart a simulation to a past 
 but not suitable. There's the boost serializtion library but the class is not self-contained, 
 - how to save (envsaver,mainly not to duplicate data, ram2file strategy, builder template, record blocks, strategy (every simulation module must implement saveto and restorefrom, can recursively save blocks))
 - important for the saving to never be conditional : we must able to predict the length of every block either directly or by reading some elements of it and then making a prediction
-- Error in the save is warning because doesn't affect simulation, but error in restore is 
+- constraints (- just das variables are ~ 100MB (.bss and .data), so state files are BIG, big file handling in C++  (https://stackoverflow.com/questions/34751873/how-to-read-huge-file-in-c))
 - overhead incured by checkpointing mechanism in simulation (block building memory overhead)
 ENVRESTORER : (a type of Iterator design pattern where you query blocks, encapsulates how blocks are created from a state file and handled, hides complexity from managers) At restore, the binary file is loaded in memory and a list of TlvBlocks is again made available to managers to restore to a previous state. a block type is linked to one and only one manager. Check for bbpsim version, do a decision state diagram
+
+\section{Error Handling}
+- Error in the save is warning because doesn't affect simulation, but error in restore is 
 
 \section{\Cpp Interface}
 

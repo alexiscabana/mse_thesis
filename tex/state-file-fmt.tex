@@ -1,0 +1,134 @@
+{
+\setlength{\parindent}{2em}
+\chapter{Checkpointing Artifact} \label{cha:prod-artifact}
+Before turning to the actual implementation of the save and restore feature, multiple choices of state representation needed to be considered. Whether one or more artifacts are produced for a checkpoint usually comes as a consequence of the approach that was taken in the design itself. However, in the context of this thesis, it was decided to start from the checkpoint artifact and build outwards. The save and restore feature was thus developed around that central idea.
+
+\section{Design Constraints}\label{sec:file-constraints}
+In sections \ref{sec:virtualbox} through \ref{sec:c3}, it was shown that the artifacts produced by checkpointing an application can take many forms. For instance, Checkpoint and Restore in User space outputs a series of files that each serve a different area of the restore, whereas VirtualBox produces one large file in a format defined as part of the open-source program. In the context of the BBP simulator, requirements DCMS-BBP-122 (see \autoref{tab:customer-reqs}) and U03 (see \autoref{tab:user-reqs}) forced the saving of a simulation to only output one file.
+
+In addition, it was also important to take into consideration the amount of data that needed to be saved, as well as its nature. A preliminary investigation showed that the majority of the data was produced by the static variables inside the flight software (see \autoref{cha:das-impl}). It was also shown that the amount of data was of the order of 150MB. Since the weight of other software modules was considered negligible in comparison, this implied that most of the data contained within the state file had to be stored in binary.
+
+It was also considered essential to be able to identify a checkpointing artifact from its content, not only by its name on the file system. Since the artifacts might be transferred frequently from one computer to another, especially inside a continuous integration system, forcing a naming convention on the file was not desirable.
+
+Finally, even though a requirement concerning the number of artifacts was imposed, it didn't mention the usage of one format over another. For this reason, different alternatives were taken into consideration. 
+
+\section{State File Format}
+Since a lot of data had to be saved in the course of a simulation checkpoint, an appropriate file extension had to be determined. In the context of the save and restore feature design, it was important to evaluate the various file options. First of all, multiple potential candidates were researched. Then, each format was evaluated based on its general qualifiers and how well it performed in certain areas critical to the design, always bearing the constraints of \autoref{sec:file-constraints} in mind. To justify the decision quantitatively, a weighted rating in percent was performed. The assessment is shown in \autoref{tab:file-fmts}.
+
+\begin{table}[htbp]
+	\vspace{12pt}
+	\centering
+	\ra{1.3}
+	\begin{tabularx}{\linewidth}{l c c c c c}
+		\toprule
+		&{\bfseries Readability}&{\bfseries Flexibility}&\makecell{\bfseries Library\\\bfseries Support}& \makecell{\bfseries Data-to-Size\\ \bfseries Ratio}&\multirow{3}{*}{\bfseries Total}\\
+		\cmidrule{2-5}
+		\multicolumn{1}{r}{\small Weight:}&{\small 5\%}&{\small 40\%}&{\small 15\%}&{\small 40\%}&\\
+		\midrule
+		Extended Markup Language  & 90 & 85 & 95 & 50& {\bfseries 72.75}\\
+		YAML  & 80 & 80 & 75 & 75& {\bfseries 77.25}\\
+		Binary  & 0 & 90 & 80 & 100& {\bfseries 88}\\
+		JSON  & 80 & 85 & 80 & 65& {\bfseries 76}\\
+		\bottomrule
+	\end{tabularx}
+	\caption{Evaluation of the relative strengths of multiple file formats as the output of a BBPSim checkpoint.}
+	\label{tab:file-fmts}
+\end{table}
+
+The criteria used to assess of a format's performance are described as follows:
+\begin{itemize}
+	\item {\bfseries Readability}. How well can the format be read by a human? Is it possible to manually modify the file easily?
+	\item {\bfseries Flexibility}. How customizable is the format with regard to data structure?
+	\item {\bfseries Library Support}. Is there extensive, open-source support for this file format's generation?
+	\item {\bfseries Data-to-Size Ratio}. What is the overhead of the serialization language? Does it scale well to hold binary data? Since the flight software contains variables that amount to around 100MB in total size, this criterion was weighted accordingly. 
+\end{itemize}
+
+Even though all the formats score reasonably well in flexibility and library support, some values from \autoref{tab:file-fmts} are still outsiders. For example, the binary format was given a score of 100 in data-to-size ratio, at the expense of readability. This is due to the nature of the format itself. With regard to data compressibility, there is no better than binary (assuming maximum theoretical data entropy\cite{art:shannon}). In the same category, for instance, it was found that XML needs to use the Base64 binary-to-text encoding to embed binary data, which can encode 6 bits of data into an \gls{ASCII} character that takes 8 bits\cite{art:base64}. This 33\% overhead is completely removed in the binary format. 
+
+Binary also provides great flexibility, because it is up to the users to define a suitable format for their needs. There is no need to stay in the bounds of a defined structure like in the other data serialization languages.
+
+With these reasons in mind, \ul{the binary format became the clear choice} as a state file output of a checkpoint in BBPSim.
+
+\section{File Binary Interface}
+Since a binary file presents great flexibility in how the data can be structured, this choice also required the development of a data serialization structure within the file, called a \gls{FBI}.
+
+\subsection*{Record Blocks}
+There are multiple ways of organizing data inside a binary file. The final arrangement is ultimately influenced by the needs of the developer and the application. In the context of this thesis, \autoref{sec:bbpsim-charact} established that a BBPSim simulation was composed of several modules that each operated inside a layer. When saving the state of the simulator, it was thus implicitly defined that the resulting file would need to package the modules' data such that it is easy to retrieve. To address this problem, the concept of \gls{RB} was developed. \autoref{tab:rb-fields} better explains each of the fields.
+
+\begin{figure}[h]
+	\vspace{6pt}
+	\small
+	\centering
+	\includesvg[width=.8\linewidth]{svg/rb}
+	\caption{Structure of a record block inside the checkpointing artifact.}
+	\label{fig:rb}
+\end{figure}
+
+\begin{table}[h]
+	\vspace{12pt}
+	\centering
+	\ra{1.3}
+	\begin{tabularx}{\linewidth}{l c X}
+		\toprule
+		{\bfseries Name}&{\bfseries Size}&{\bfseries Description}\\
+		\midrule
+		Tag & 1 byte & Value that is associated to the content or type of data in the payload.\\
+		\midrule
+		Size & 4 bytes & The length of the payload in bytes. Expressed as an unsigned integer.\\
+		\midrule
+		Payload & {X byte(s)} & Raw bytes of data to save. Because of the Tag, this data can be correctly parsed, cast or loaded by the relevant simulation modules.\\
+		\midrule
+		CRC16 & 2 bytes & Calculation of the CRC16 error-detecting code on the payload section. This algorithms detects accidental corruption of raw data blocks.\\
+		\bottomrule	
+	\end{tabularx}
+	\caption{Definition of the different sections that compose a record block.}
+	\label{tab:rb-fields}
+\end{table}
+
+RBs are a binary construct that help segment and structure the state file. They were heavily inspired from the popular \gls{TLV} block format, used notably in the User Datagram Protocol definition\cite{report:udp}. To facilitate their manipulation programatically, it was decided that record blocks would be guaranteed to hold $\geq$1 byte of data in their payload. As for the decision of appending a \gls{CRC} calculation at the end of each RB, it was motivated by the certainty of holding valid raw data in the payload.
+
+The payload section in each record block is not monitored by any mechanism. Hence, it is of the responsibility of the developer to correctly interpret the bytes of content. For instance, the users must ensure that the data endianness is correctly preserved when reading the file. Since the simulator runs exclusively on an machine with x86 architecture, little-endian can be assumed throughout the rest of this thesis.
+
+\subsection*{File Layout}
+Once the RB package format was defined, it was possible to design the general layout of the checkpointing artifact. Since \gls{BBPSim} was composed of various modules, and since each record block is parsable on its own (because of the embedded size), it was decided to simply queue them one after another. 
+
+\begin{figure}[h]
+	\vspace{6pt}
+	\centering
+	\small
+	\includesvg[width=.8\linewidth]{svg/file-layout}
+	\caption{Data layout of the checkpointing artifact.}
+	\label{fig:file-layout}
+\end{figure}
+
+As shown in \autoref{fig:file-layout}, it was decided to prepend a file header to the list of record blocks. This was made with the intention of satisfying the constraint of file self-identification mentioned in \autoref{sec:file-constraints}. The information deemed necessary for identification of the checkpointing artifact was included in the header, described in \autoref{tab:header-fields}.
+\begin{table}[h]
+	\vspace{12pt}
+	\centering
+	\ra{1.3}
+	\begin{tabularx}{\linewidth}{l c X}
+		\toprule
+		{\bfseries Name}&{\bfseries \Cpp Type}&{\bfseries Description}\\
+		\midrule
+		BBPSim Version & \texttt{char[20]} & String of the version of BBPSim that produced this artifact.\\
+		\midrule
+		FSW Version & \texttt{char[20]} & String of the version of the flight software that produced this artifact.\\
+		\midrule
+		Timestamp & \texttt{std::time_t} & When the artifact was created.\\
+		\midrule
+		Step Count & \texttt{uint32_t} & The number of times the \texttt{step()} command was called in the simulation that was saved.\\
+		\midrule
+		Load Address & \texttt{void*} & The address at which \pathmono{libBbpSim.so} was loaded.\\
+		\midrule
+		RBs & \texttt{uint16_t} & The amount of record blocks after the header.\\
+		\midrule
+		Reserved & \texttt{uint8_t[32]} & Reserved for future use.\\
+		\bottomrule	
+	\end{tabularx}
+	\caption{Definition of the different fields in the state file header.}
+	\label{tab:header-fields}
+\end{table}
+
+Since the save and restore can happen a long period of time apart, the BBPSim and flight software versions are necessary to identify whether a past checkpoint artifact is compatible with the current version. The timestamp and step counts were added for convenience. As for the addition of the load address of the BBPSim library, a detailed explanation is given in \autoref{cha:das-impl}. At the end of the header, some bytes were also reserved in order to keep the possibility of adding new fields without invalidating checkpointing artifacts produced in a previous version of BBPSim.
+
+}

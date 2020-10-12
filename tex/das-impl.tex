@@ -15,6 +15,7 @@ tried several techniques to save/restore execution stacks:
 - strat 2 : restart and stub functions, can do it with ELF-HOOK https://www.codeproject.com/Articles/70302/Redirecting-functions-in-shared-ELF-libraries
 	Redirection of the OSApiWrapper calls, Extremely useful, because our library is a dynamic object, which means its calls to library functions are always resolved at runtime by looking in the .rel.plt (relocation, Procedure Linkage Table)
 - strat 3 complicated version of longjmp: how to save execution (asm, disassembly of code, save sp, etc.% https://cs.brown.edu/courses/cs033/docs/guides/x64_cheatsheet.pdf)
+Depends on the ABI
 \section{Design Constraints}
 \subsection*{Shared Object Considerations}\label{sec:dynlib-considerations}
 - Dynamic library loading  https://eli.thegreenplace.net/2011/08/25/load-time-relocation-of-shared-libraries
