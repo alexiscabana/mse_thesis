@@ -12,7 +12,7 @@ It was also considered essential to be able to identify a checkpointing artifact
 
 Finally, even though a requirement concerning the number of artifacts was imposed, it didn't mention the usage of one format over another. For this reason, different alternatives were taken into consideration. 
 
-\section{State File Format}
+\section{State File Extension}
 Since a lot of data had to be saved in the course of a simulation checkpoint, an appropriate file extension had to be determined. In the context of the save and restore feature design, it was important to evaluate the various file options. First of all, multiple potential candidates were researched. Then, each format was evaluated based on its general qualifiers and how well it performed in certain areas critical to the design, always bearing the constraints of \autoref{sec:file-constraints} in mind. To justify the decision quantitatively, a weighted rating in percent was performed. The assessment is shown in \autoref{tab:file-fmts}.
 
 \begin{table}[htbp]

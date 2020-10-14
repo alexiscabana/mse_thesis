@@ -1,9 +1,64 @@
 {
 \setlength{\parindent}{2em}
-\chapter{DAS Snapshotting - Implementation Analysis}\label{cha:das-impl}
-Needs its own section, because big!
-\section{FSW analysis}
-- what needs to be saved?
+\chapter{Flight Software Checkpointing}\label{cha:das-impl}
+At its core, offering a suitable environment for the simulation of the flight software was the main purpose of the BBPSim simulator. Since \gls{SNC} wanted to reproduce the in-flight behavior of the communication sub-system as faithfully as possible, the software-in-the-loop test framework was designed according to the principle of encapsulation: exclude all internal changes to the simulated software and instead build around what is already there. Having said that, inevitably, there were exceptions made for some parts of the flight software algorithms, where code had to be altered to make it compatible to run on a Linux machine. For the most part, however, as shown in \autoref{fig:bbpsim-layers}, BBPSim succeeded in integrating \gls{DAS} as an "untouchable" nucleus and interfacing only indirectly with it.
+
+The fact that DAS was supposed to stay completely permeable to modification forced the implementation of the save \& restore feature to treat it as a black box. This point of view brought several challenges, which were not present when modifying the BBPSim code to support checkpointing. 
+
+In this section, the constraints that influenced the development of a checkpointing technique within the flight software are first of all described. It should be noted that most of the solutions to the problems were based on technical details that, in the end, had a meaningful impact. Subsequently, \gls{DAS} is briefly analyzed to clearly define which of its components' checkpointing are considered a necessary condition for a stable restore. Then, the approach taken to indirectly access, save and restore them is explained in details.
+
+\section{Design Constraints}
+It goes without saying that user and customer requirements play a big role in how the design goes forward. In particular, to make the \gls{FSW} checkpointable, it was important to bear in mind DCMS-BBP-121 (64-bit application), U02 (no alteration to FSW) and U01 (no instability). However, some other technicalities had a big importance too.
+
+First and foremost, since the delivery method of BBPSim was through a Linux dynamic library, it was realized that most of the container-based solutions presented in \autoref{cha:state-of-the-art} could not apply to BBPSim. A shared object does not possess the same control than an application over many things, like memory layout. This presented a big problem, and a better explanation of why is given in the coming sections.
+
+TO ADD HERE 
+
+\section{Analysis of Necessary Conditions}
+Saving and restoring an application was the main subject of \autoref{cha:state-of-the-art}. In every existing solution that was presented, the checkpointer programs did not have any control over the building process of the checkpointee. This made them approach the checkpointing problem from various angles, depending on the level at which the program was supposed to interact with the checkpointed application. 
+
+In parallel, they each introduced a different sufficient condition, in terms of what to save, to be able to restore back the checkpointee. For example, it was considered essential for CRIU to save the totality of active memory pages inside the application's \gls{VMA} range, something pointless using the C\textsuperscript{3} environment.
+
+Since the checkpointing feature of BBPSim was done with a different set of constraints, the set of necessary conditions for a stable restore had to once again be revisited. In this section, an assessment of the required components to checkpoint in the flight software is done. 
+
+\subsection*{Definition of FSW Program State}
+The description of requirement DCMS-BBP-122 on page \pageref{tab:customer-reqs} mentions that "the current state of the model" had to be saveable. Undoubtedly, the word "model" is a very abstract term, and it could be interpreted in many ways. It was important to first define what qualified as a "model" going forward.
+
+To better picture this, a parallel can be drawn with how C code is structured once compiled. When the \gls{GCC} compiles a valid C source file on Linux, an object file with extension \texttt{.o} is produced. Internally, this file is laid out in the Unix-standard \gls{ELF}. This very flexible format is divided into multiple segments that each have their own function in defining the program at low-level.
+
+In this context, there are four relevant memory segments inside an object file:
+\begin{enumerate}
+	\item \textbf{\texttt{.bss}}. Contains the statically-allocated variables that were either uninitialized or initialized to zero.
+	\item \textbf{\texttt{.data}}. Contains the statically-allocated variables that were initialized to zero.
+	\item \textbf{\texttt{.text}}. Contains the binary instructions. Basically, the executable code.
+	\item \textbf{\texttt{.rodata}}. Contains the read-only data (constants).
+\end{enumerate}
+\autoref{code:c-to-segments} shows how the translation is done using real C code.
+
+In this thesis, it is argued that the state, or "model" of the flight software could be defined by two main components: \ul{the memory segments of statically-allocated variables, and the program counters}. Translated to an object file, it was possible to redefine the state of a multithreaded DAS as being the full contents, in \pathmono{libBbpSim.so}, of the \texttt{.bss} and \texttt{.data} segments, as well as the position of all the program counters within the \texttt{.text} segment. Because the \texttt{.rodata} and other segments that contained constant values do not change from one simulation to the other, they were deemed unnecessary to include. They couldn't distinguish a given FSW state by themselves, since they were identical at every simulation run.
+
+\subsection*{Condition 1 - Memory Segments}
+
+\subsection*{Condition 2 - Program Counters}
+
+When the program is executed, each section gets copied contiguously inside the virtual memory address range allocated for the program by the operating system. 
+
+As for the program counters, their state can be represented by where they are located within the executable code segment (\texttt{.text}).
+
+For this thesis, it is argued that saving the content
+
+Defining what constitutes it is an essential to derive 
+
+
+
+ 
+
+more formally, this thesis argues that, when $F$ is a C function:
+\[
+	\forall F: F(M_i)\equiv F(M_f)
+\]
+when $F$ is void of non-deterministic processes. It doesn't matter whether $F$ is stateful or stateless. As shown in \autoref{code:c-to-segments}, even function-scoped variables are included in the memory segments are thus included in a FSW state.
+
 \section{Black-box Symbol Access}
 - Creation of the DAS state manager + symbol catalog
 - how to access everything (talk about dynamic library loading, elf dumps, double linking etc.)
@@ -16,7 +71,7 @@ tried several techniques to save/restore execution stacks:
 	Redirection of the OSApiWrapper calls, Extremely useful, because our library is a dynamic object, which means its calls to library functions are always resolved at runtime by looking in the .rel.plt (relocation, Procedure Linkage Table)
 - strat 3 complicated version of longjmp: how to save execution (asm, disassembly of code, save sp, etc.% https://cs.brown.edu/courses/cs033/docs/guides/x64_cheatsheet.pdf)
 Depends on the ABI
-\section{Design Constraints}
+
 \subsection*{Shared Object Considerations}\label{sec:dynlib-considerations}
 - Dynamic library loading  https://eli.thegreenplace.net/2011/08/25/load-time-relocation-of-shared-libraries
 - address at which the library is loaded (why always 0x00007fffXXXXXXXX?) https://unix.stackexchange.com/questions/509607/how-a-64-bit-process-virtual-address-space-is-divided-in-linux
