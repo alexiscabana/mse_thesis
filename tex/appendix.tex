@@ -8,8 +8,8 @@
 /* this means they exist for the entire 	*/
 /* execution of the program             	*/
 /* They all go in the .bss section 			*/
-/* since uninitalized or init to 0			*/
-static int aVariable;
+/* since uninitalized or init to 0 			*/
+static int aVariable;//$\label{lc-beg-statics}$
 static int anotherVariable = 0;
 int aVariable;
 int anotherVariable = 0;
@@ -20,7 +20,7 @@ static const double pi = 3.1415;
 /* statically-allocated variables       	*/
 /* They all go in the .bss section 			*/
 int anInitedVar = 42;
-static int anotherInitedVar = 42;
+static int anotherInitedVar = 42;//$\label{lc-end-statics}$
 
 /* Executable code, so defined in .text 	*/
 int count() {

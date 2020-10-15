@@ -10,6 +10,7 @@
 *.run
 *.synctex.gz
 *.xml
+*.pyg
 *.bbl
 *.blg
 *.log
