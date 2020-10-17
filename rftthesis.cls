@@ -312,6 +312,7 @@
 
 %% declaration page
 \newcommand{\makedeclaration}{
+\thispagestyle{empty}
 \chapter*{Declaration of Authorship}
 
 I hereby certify that this thesis has been composed by me and is based on my own work, unless stated otherwise. No other person’s work has been used without due acknowledgement in this thesis. All references and verbatim extracts have been quoted, and all sources of information, including graphs and data sets, have been specifically acknowledged.

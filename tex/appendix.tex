@@ -1,7 +1,7 @@
 {
-\chapter{}\label{code:c-to-segments}
-\begin{listing}[H]
-	\begin{minted}{c}
+\chapter{C Variables and their Segments}\label{code:c-to-segments}
+
+\begin{minted}{c}
 // main.c
 
 /* statically-allocated variables       	*/
@@ -27,7 +27,87 @@ int count() {
 	static unsigned int theCount = 0; //also goes in .bss 
 	return theCount++;
 }
-	\end{minted}
-\end{listing}
+\end{minted}
+
+\chapter{Mapping Produced by the Linker for BBPSim}\label{map:ld}
+
+{\small
+\begin{verbatim}
+[... skipping output ...]
+
+.das_state_vars_data
+0x0000000000759a80      0x4f0
+0x0000000000759a80                __das_state_vars_data_start = .
+SORT(*obj/DasSrc/*.o)(.data .data.* .gnu.linkonce.d.*)
+.data        0x0000000000759a80          0x0 obj/DasSrc/Common/src/APID.o
+
+[... skipping output ...]
+
+.data        0x0000000000759f40         0x30 [...]/src/RoutingProcessing.o
+.data        0x0000000000759f70          0x0 [...]/src/StateHandler.o
+0x0000000000759f70                __das_state_vars_data_end = .
+
+.das_state_vars_bss
+0x0000000000759f80  0x51b1068
+0x0000000000759f80                __das_state_vars_bss_start = .
+SORT(*obj/DasSrc/*.o)(.bss .bss.* COMMON)
+.bss           0x0000000000759f80        0x0 obj/DasSrc/Common/src/APID.o
+.bss           0x0000000000759f80        0x0 obj/DasSrc/Common/src/Crc16.o
+
+[... skipping output ...]
+
+.bss           0x000000000590a8e0      0x3b8 [...]/src/RoutingProcessing.o
+*fill*         0x000000000590ac98        0x8 
+.bss           0x000000000590aca0      0x348 [...]/src/StateHandler.o
+0x000000000590afe8                __das_state_vars_bss_end = .
+\end{verbatim}
+}
+\chapter{Sanitized List of DAS Variables}\label{das-symbol-catalog}
+
+{\small
+\begin{verbatim}
+e6069e4f97d40996a8ea84bbb62eaf6b16aec786
+0000000000759a80 0000000000000000 __das_state_vars_data_start
+0000000000759a80 0000000000000004 m_u32DasSwTraceFilter
+0000000000759aa0 0000000000000040 asTflLoadingOrder
+0000000000759ae0 0000000000000020 asDidlLoadingOrder
+0000000000759b00 0000000000000030 asIpclLoadingOrder
+0000000000759b40 0000000000000001 m_u8PageReadCount
+0000000000759b60 0000000000000054 m_u32BinaryFileSizeStatus
+0000000000759bc0 0000000000000020 m_aeFileLoadStatus
+0000000000759be0 0000000000000040 m_strBinaryFileList
+0000000000759c20 0000000000000008 m_asExtCmdTlmSubsystem
+[... skipping output ...]
+0000000000759d10 0000000000000008 m_asRsVcduRxCntTlm
+0000000000759d18 000000000000000c m_asFrameSyncMissCntTlm
+0000000000759d24 000000000000000c m_asFrameSyncDetectCntTlm
+0000000000759d30 000000000000000c m_asVcduTxCntTlm
+0000000000759d3c 0000000000000008 m_asIdleFrameTxCntTlm
+0000000000759d44 0000000000000008 m_asDataFrameTxCntTlm
+0000000000759d4c 000000000000000c m_asPassThroughTxCntTlm
+0000000000759d60 0000000000000016 m_au16CmdMsgTimeoutInMs
+0000000000759d80 0000000000000020 m_sFtfcMemPool
+0000000000759da0 0000000000000020 m_sGtwMemPool
+0000000000759dc0 0000000000000120 m_asRfcuRffeReceiver
+0000000000759ee0 0000000000000028 m_au8TimeSuitePerRate
+0000000000759f08 000000000000000c m_au8C2v2RateToTimeConversion
+0000000000759f20 0000000000000014 m_au8TdrsRateToTimeConversion
+0000000000759f40 0000000000000030 mc_asVcidFtrList
+0000000000759f70 0000000000000000 __das_state_vars_data_end
+0000000000759f80 0000000000000000 __das_state_vars_bss_start
+0000000000759f80 0000000000000004 m_bDasIntegrationTraceFilter
+[... skipping output ...]
+
+\end{verbatim}
+}
+
+\chapter{Cataloging the DAS Variables}
+\begin{figure}[H]
+	\centering
+	\includesvg[width=\linewidth]{svg/blackbox-diagram}
+	\caption{Sequential steps to include the symbol catalog in \pathmono{libBbpSim.so}}
+	\label{fig:blackbox-diagram}
+\end{figure}
+
 
 }

@@ -24,6 +24,7 @@
 \usepackage{soul}
 \usepackage{booktabs}
 \usepackage{makecell}
+\usepackage{subcaption}
 \usepackage[cache=false]{minted}
 \tcbuselibrary{minted,skins}
 
@@ -73,7 +74,6 @@
 %\listoflistings
 
 %\printnoidxglossary[type=acronym,nonumberlist]
-
 {
 % Whole content of the thesis
 %\input{tex/introduction.tex}
@@ -92,8 +92,8 @@
 \renewcommand{\bibname}{References}
 \printbibliography
 
-%\begin{appendices}
-%\input{tex/appendix.tex}
-%\end{appendices}
+\begin{appendices}
+\input{tex/appendix.tex}
+\end{appendices}
 
 \end{document}

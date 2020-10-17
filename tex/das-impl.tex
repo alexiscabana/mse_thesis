@@ -68,14 +68,14 @@ On top of that, even though the program counter represents the position of the e
 When the three conditions listed above were grouped together, it was defined that this formed a sufficient condition for a consistent DAS global state restore. More formally, this thesis argues that:
 \begin{itemize}
 	\item with $F$ being a C function in DAS;
-	\item with $G_s$ being the global state of DAS in memory;
-	\item with $S_r$ being a previously saved state being restored;
+	\item with $G_s$ being the global state of DAS in memory in a first BBPSim run;
+	\item with $S_r$ being a previously saved state being restored in a second BBPSim run;
 \end{itemize}
 then
 \begin{equation} \label{eq:sr_equiv}
 	\forall F: F(G_s)\equiv F(S_r)
 \end{equation}
-when $F$ is void of non-deterministic processes. All DAS functions satisfied to this criteria, because they were strictly exempt of dynamic memory allocation, random numbers, and scheduling non-determinism (since the order of execution for threads is set at compile-time).
+when $F$ is void of non-deterministic processes. All DAS functions satisfied to this criteria, because they were strictly exempt of dynamic memory allocation, random numbers, and scheduling non-determinism (since the order of execution for threads was set at compile-time).
 
 It should be noted that \autoref{eq:sr_equiv} also holds true whether $F$ is \textit{stateful} or stateless (i.e whether calling $F$ with the same parameters yields the same output or not). This is because even function-scoped static variables are included in the memory segments that are part of $S_r$. \autoref{code:c-to-segments} contains a good example of this. The \texttt{count()} function is stateful, but its state (i.e the value of \mintinline{c}|theCount|) is also included in the definition of the flight software state (in the \texttt{.bss} section).
 
