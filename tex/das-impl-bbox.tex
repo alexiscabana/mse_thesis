@@ -7,10 +7,12 @@ In \autoref{sec:conditions}, it was shown that saving the entire set of statical
 
 In the end, the solution that was adopted involved the handling of DAS object files, \textit{after} they were compiled. Ultimately, no control over the flight software source code was given, but the compilation and building process were alterable. The following sections show how this limited control could be harvested, using a series of manipulations at build time, to give the \gls{BBPSim}-domain objects the required access to save the state of the flight software.
 
+The whole process was quite complex, so one can get confused easily. For better visualization, the manipulations were drawn as a flowchart in \autoref{fig:blackbox-diagram}.
+
 \subsection*{Linking Process}
 First of all, it is crucial to understand how the linking process of an application is done. As mentioned earlier, when each source code file is compiled by \gls{GCC}, a \texttt{.o} object file is produced. Although this file contains executable code, the object file that would be produced by GCC would, by itself, not be enough to be executable as a stand-alone. The \textit{linker} needs to first process the object files. The one used in the case of this thesis was GNU \texttt{ld} version 2.27.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 	\centering 
 	\includegraphics[width=.75\linewidth,keepaspectratio]{art/obj-to-elf-to-mem.png}
 	\caption{Combining Input Sections to Form an Executable Object Module.\cite{online:linking}}
@@ -89,7 +91,7 @@ extern char __das_state_vars_data_end[];
 To confirm that the script worked, an output map was produced by \texttt{ld} after the linking process (using \texttt{-Wl,-M=mapfile.map}). An excerpt is given in \autoref{map:ld}. It shows that the sections get created and that the \texttt{.data} and \texttt{.bss} sections of each DAS object file all get correctly mapped in the output file.
 
 \subsection*{Cataloging State Variables}
-Once the relevant sections of memory related to DAS were correctly laid out after the linking process, it was now a matter of deducing the address of each of these variables inside the resulting shared object. As the outputted file was in the ELF format, an ELF analyzing program could then be used to get the list of all the variables contained within the relevant section:
+Once the relevant sections of memory related to DAS were correctly laid out after the linking process, it was now a matter of deducing the address of each of these variables inside the resulting shared object. As the outputted file was in the ELF format, an ELF analyzing tool could then be used to get the list of all the variables contained within the relevant section:
 \begin{minted}{bash}
 objdump --syms -j .das_state_vars_data libBbpSim-intermediate.so
 \end{minted}
@@ -117,13 +119,13 @@ This put the raw bytes of the catalog in the \texttt{.das_state_vars_catalog_str
 
 The second part consisted in correctly laying out those bytes in the second and final shared object, \pathmono{libBbpSim.so}. This was done by once again taking advantage of the linker script in \autoref{code:link-script-das} to add an additional section, \texttt{.das_state_vars_catalog_string}.
 
-Finally, all the object files both from the BBPSim and DAS domains could be linked a second time, together with \pathmono{das-symbol-catalog.o}. The resulting \pathmono{libBbpSim.so} file would be the last and final shared object. This effectively embedded the symbol catalog's raw bytes, encoded in \gls{ASCII} characters. Executable code inside the library could also refer to the stringized symbol catalog using newly created symbols used as guards for the raw bytes. Those symbols being only defined in the second linking process, it was necessary to tag them as having \texttt{weak} linkage for the linker not to complain on the first linker pass:
+Finally, all the object files both from the BBPSim and DAS domains could be linked a second time, together with \pathmono{das-symbol-catalog.o}. The resulting \pathmono{libBbpSim.so} file would be the last and final shared object. This effectively embedded the symbol catalog's raw bytes, encoded in \gls{ASCII} characters. Executable code inside the library could also refer to the stringized symbol catalog via newly created symbols used as guards for the raw bytes. Those symbols being only defined in the second linking process, it was necessary to tag them as having \texttt{weak} linkage for the linker not to complain on the first linker pass:
 \begin{minted}{c}
 extern char __attribute__((weak)) _binary_das_symbol_catalog_txt_start[];
 extern char __attribute__((weak)) _binary_das_symbol_catalog_txt_end[];
 \end{minted}
 
-The results can be better shown by using a binary visualization program\cite{online:binvisio}. \autoref{fig:bin-lib-comp} shows a comparison of the \pathmono{libBbpSim-intermediate.so} and \pathmono{libBbpSim.so} shared objects in binary. Bytes with a value in the \gls{ASCII} character range are represented in blue. Both images read left-to-right with address 0x0 on the left. It is possible to see that a new blue section appears in \autoref{fig:bin-lib-final}, thus confirming that the symbol catalog correctly gets included in the final version of the BBPSim library.
+The results can be better shown by using a binary visualization program\cite{online:binvisio}. \autoref{fig:bin-lib-comp} shows a comparison of the \pathmono{libBbpSim-intermediate.so} and \pathmono{libBbpSim.so} shared objects in binary. Bytes with a value in the \gls{ASCII} character range are represented in blue. Both images read left-to-right with address 0x0 on the left. It is possible to see that a new blue section appear in \autoref{fig:bin-lib-final}, thus confirming that the symbol catalog correctly got included in the final version of the BBPSim library.
 
 \begin{figure}[htbp]
 	\centering
@@ -144,14 +146,41 @@ The results can be better shown by using a binary visualization program\cite{onl
 	\label{fig:bin-lib-comp}
 \end{figure}
 
-Since there is no modification to the DAS object files between the two linking process, the variable list taken from \pathmono{libBbpSim-intermediate.so} \textit{is guaranteed} to be the same and in the same order as \pathmono{libBbpSim.so}. 
+Since there was no modification to the DAS object files between the two linking process, the variable list taken from \pathmono{libBbpSim-intermediate.so} \textit{was guaranteed} to be the same and in the same order as \pathmono{libBbpSim.so}. This embedding of data also did not violate the ELF specification, which is clear about it's requirements:
+
+\begin{shadedquotation}
+[...] sections and segments have no specified order. Only the ELF header has a fixed position in the file.\cite{online:elf-spec}
+\end{shadedquotation}
 
 \subsection*{Shared Object Considerations}
-- Dynamic library loading  https://eli.thegreenplace.net/2011/08/25/load-time-relocation-of-shared-libraries
-- address at which the library is loaded (why alwayshttps://unix.stackexchange.com/questions/509607/how-a-64-bit-process-virtual-address-space-is-divided-in-linux 0x00007fffXXXXXXXX?) 
-In this case, application continerization is not possible, because we are a library.
-- how to access everything (talk about dynamic library loading, elf dumps, double linking etc.)
+As stated previously, the delivery method of BBPSim was done through a shared object, or dynamic library. This brought some challenges pertaining to memory validity, since the behavior of those objects is very particular.
+
+When a program links a shared library, it is the job of the \textit{dynamic linker} to load that library in the program's address space at runtime. This special tool performs many things, from load-time relocation to symbol references resolving\cite{online:elf-reloc}, which are all done before the \texttt{main()} of the program is called. In particular, the dynamic linker starts by mapping the different sections of the dynamic library inside the address space of the program. 
+
+\begin{figure}[htbp]
+	\centering
+	\begin{subfigure}[t]{.58\linewidth}
+		\small
+		\centering
+		\includesvg[width=\linewidth]{svg/ptr-mem-first-run}
+		\caption{Contents on the first run.}
+		\label{fig:ptr-mem-first-run}
+	\end{subfigure}%
+	\begin{subfigure}[t]{.38\linewidth}
+		\small
+		\centering
+		\includesvg[width=\linewidth]{svg/ptr-mem-second-run}
+		\caption{Contents on the second run}
+		\label{fig:ptr-mem-second-run}
+	\end{subfigure}
+	\caption{Potential displacement of pointed object with ASLR enabled.}
+	\label{fig:mem-displacement}
+\end{figure}
+
+In Linux, the concept of \gls{ASLR} tells the dynamic linker to randomize the location at which the shared library's sections are loaded with every program run. A problem arose with the use of pointers in flight software: because of ASLR at restore time, pointer variables would become invalid, since what they pointed would not be located at the same address, like in  \autoref{fig:ptr-mem-second-run}. This problem did not have a straightforward solution. For this reason, \gls{SNC} was asked if disabling \gls{ASLR} on their Linux machine would be reasonable, and the request was accepted. This meant that \pathmono{libBbpSim.so} would always be loaded at the same address, hence avoiding this problem. The address was one of the fields in the checkpointing artifact header (see \autoref{tab:header-fields}).
 
 \subsection*{Summary}
-The whole process from is quite complex. With this manipulation of sections, one can get easily confused. This is why the whole process is 
+This method of indirect access to DAS variables efficiently served its purpose. It defined a way for the BBPSim domain objects to access flight software memory without requiring the modification of software, since everything happened at build time. It deduced the address of the variables rather than depending on an API like \texttt{GetTheVariable()}. One of the big benefits of this approach was that potential addition of new variables to the flight software would be automatically taken in charge, thus the solution was future-proof.
+
+In \autoref{cha:bbpsim-impl}, how the catalog was used by \gls{BBPSim} is further described.
 }
