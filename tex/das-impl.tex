@@ -82,18 +82,7 @@ It should be noted that \autoref{eq:sr_equiv} also holds true whether $F$ is \te
 Now that \textit{what} to save is properly defined, the following sections detail how the conditions were met for each of them to achieve a consistent checkpointing of the flight software.
 
 %big sections
-\input{tex/das-impl-bbox.tex}
-
-
-\section{Multithreaded Execution Backup and Restore}\label{sec:das-exec-restore}
-When the program is executed, each section gets copied contiguously inside the virtual memory address range allocated for the program by the operating system. 
-tried several techniques to save/restore execution stacks:
-- sufficient conditions to be able to restore a task (w or w/o touching exec stack)
-- different strategies, ultimately bounded by different reasons 
-- strat 1 : just replay the thread until the first waitUntilNextPeriod() (there's 4 possible states : not created yet, created but not once had the "go", waiting in a waitUntilNextPeriod(), created but deleted)
-- strat 2 : restart and stub functions, can do it with ELF-HOOK https://www.codeproject.com/Articles/70302/Redirecting-functions-in-shared-ELF-libraries
-Redirection of the OSApiWrapper calls, Extremely useful, because our library is a dynamic object, which means its calls to library functions are always resolved at runtime by looking in the .rel.plt (relocation, Procedure Linkage Table)
-- strat 3 complicated version of longjmp: how to save execution (asm, disassembly of code, save sp, etc.% https://cs.brown.edu/courses/cs033/docs/guides/x64_cheatsheet.pdf)
-Depends on the ABI
+%\input{tex/das-impl-bbox.tex}
+\input{tex/das-impl-threads.tex}
 
 }
