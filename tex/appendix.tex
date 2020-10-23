@@ -109,5 +109,38 @@ e6069e4f97d40996a8ea84bbb62eaf6b16aec786
 	\label{fig:blackbox-diagram}
 \end{figure}
 
+\chapter{Stack-Copying Assembly Routine}\label{code:stk-copy-asm}
 
+\begin{minted}{c}
+void bbpsimThreadRestoreEntry() {
+	asm volatile(
+	 "  xor   %%r10, %%r10               \n\t" //r10 is the counter
+	 "copyquadword:                      \n\t" //$\label{code:copyqword-beg}$
+	 "  cmpq  %[length], %%r10           \n\t"
+	 "  jnb   copyend                    \n\t"
+	 "  movq  (%[other]), %%rax          \n\t"
+	 "  movq  %%rax, (%[cur])            \n\t"
+	 "  addq  $8, %%r10                  \n\t"
+	 "  subq  $8, %[other]               \n\t"
+	 "  subq  $8, %[cur]                 \n\t"
+	 "  jmp   copyquadword               \n\t"
+	 "copyend:                           \n\t"
+	 "  movq   %[context], %%rdi         \n\t"//arg to setcontext
+	 "  movq   %[sp], %%rsp              \n\t"//set stack pointer
+	 "  jmpq   *%[setcontext]            \n\t"//doesn't return
+	 ://outputs (none)
+	 ://inputs, constraint all to registers, can't touch memory
+	     [context] "r"(sc),                         //= register set
+	     [sp] "r"(sc->uc_mcontext.gregs[REG_RSP]),  //= new stack pointer
+	     [length] "r"(u64SizeOfCopy),               //= $\Delta_{usr}$
+	     [cur] "r"(fswthread->m_pi8StartUserStack), //= current stack start
+	     [other] "r"(pi8RestoreStartUserStack),     //= old stack start
+	     [setcontext] "r"(&setcontext)              //= address of setcontext 
+	 ://clobbered registers
+	     "rax", "rdi", "r10"
+	);
+	
+	return; //should never get here
+}
+\end{minted}
 }
