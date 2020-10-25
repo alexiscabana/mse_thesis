@@ -8,11 +8,11 @@ The fact that DAS was supposed to stay completely permeable to modification forc
 In this section, the constraints that influenced the development of a checkpointing technique within the flight software are first of all described. It should be noted that most of the solutions to the problems were based on technical details that, in the end, had a meaningful impact. Subsequently, \gls{DAS} is briefly analyzed to clearly define which of its components' checkpointing are considered a necessary condition for a stable restore. Then, the approach taken to indirectly access, save and restore them is explained in details.
 
 \section{Design Constraints}
-It goes without saying that user and customer requirements play a big role in how the design goes forward. In particular, to make the \gls{FSW} checkpointable, it was important to bear in mind DCMS-BBP-121 (64-bit application), U02 (no alteration to FSW) and U01 (no instability). However, some other technicalities had a big importance too.
+It goes without saying that user and customer requirements played a big role in how the design went forward. In particular, to make the \gls{FSW} checkpointable, it was important to bear in mind DCMS-BBP-121 (64-bit application), U02 (no alteration to FSW) and U01 (no instability). However, some other technicalities had a big importance too. They are further detailed in this chapter.
 
-First and foremost, since the delivery method of BBPSim was through a Linux dynamic library, it was realized that most of the container-based solutions presented in \autoref{cha:state-of-the-art} could not apply to BBPSim. A shared object does not possess the same control than an application over many things, like memory layout. This presented a big problem, and a better explanation is given in the coming sections.
+Also, since the delivery method of BBPSim was through a Linux dynamic library, it was realized that most of the container-based solutions presented in \autoref{cha:state-of-the-art} could not apply to BBPSim. A shared object does not possess the same control as an application over many things, like memory layout. This was a problem, and a better explanation of the issue is given in the coming sections.
 
-TO ADD HERE 
+Finally, because the build process of the dynamic library happened inside a Linux machine, the tools used to execute the checkpointing had to be standard Linux programs installed on any distribution. This constraint came from the fact that developers on the Dream Chaser team used a Linux virtual machine to run a simulation. Hence, adding in the dependency on another program would imply changing all of the Linux VMs images on the team. This was of not desirable.
 
 \section{Definition of Sufficient Condition for Restoration}\label{sec:conditions}
 Saving and restoring an application was the main subject of \autoref{cha:state-of-the-art}. In every existing solution that was presented, the checkpointer programs did not have any control over the building process of the checkpointee. This made them approach the checkpointing problem from various angles, depending on the level at which the program was supposed to interact with the checkpointed application. 
@@ -82,7 +82,7 @@ It should be noted that \autoref{eq:sr_equiv} also holds true whether $F$ is \te
 Now that \textit{what} to save is properly defined, the following sections detail how the conditions were met for each of them to achieve a consistent checkpointing of the flight software.
 
 %big sections
-%\input{tex/das-impl-bbox.tex}
+\input{tex/das-impl-bbox.tex}
 \input{tex/das-impl-threads.tex}
 
 }
