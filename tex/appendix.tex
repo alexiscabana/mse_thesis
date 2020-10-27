@@ -143,4 +143,25 @@ void bbpsimThreadRestoreEntry() {
 	return; //should never get here
 }
 \end{minted}
+
+\chapter{Environment Saver Use Case}\label{code:env-saver-use}
+
+\begin{minted}{c++}
+eModuleStatus CFifoManager::SaveTo(CEnvironmentSaver& rclEnvSaver, void* pvArg)
+{
+	CFifoQueue* pclQueue = nullptr;
+	for(auto itFifo : m_clFifos)
+	{
+		pclQueue = itFifo.second;
+		rclEnvSaver.BeginBlock(RB_FIFO);
+		rclEnvSaver.AddToBlock(itFifo.first); // fifo id
+		rclEnvSaver.AddToBlock(pclQueue->GetMessageSize());//fifo element size
+		rclEnvSaver.AddToBlock(pclQueue->GetQueueMaxLength());//fifo queue length
+		//let the queue save its messages
+		pclQueue->SaveTo(rclEnvSaver);
+		rclEnvSaver.EndBlock();
+	}
+	return BBPSIM_STATUS_OK;
+}
+\end{minted}
 }
