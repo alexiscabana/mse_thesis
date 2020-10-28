@@ -146,6 +146,8 @@ It is important to note, in the case of the mutexes, that their state (locked/un
 	\item Because \gls{BBPSim} used the pthread library in the background, mutexes of types \texttt{pthread_mutex_t} were used. Using this type of mutex requires the user to always release a mutex from the same thread as the one which acquired it. Otherwise, the specification mentioned undefined behavior\cite{online:pthread-mutex}. This meant that the restored threads would have had to recreate the mutexes they themselves created in the previous simulation run. This was considered too complex to implement.
 \end{enumerate}
 
+In the end, with all the data gathered, the checkpointing artifact's size was of the order of 115MB. This size depended on many things, but the amount of threads running when saving was the biggest factor of variation.
+
 \subsection*{File System}
 To continue the serialization process, the content of the flight software's emulated file system also needed to be included in the checkpointing artifact. This was due to the operating system layer reimplementing an API to manipulate files located in the Linux machine's file system. On the actual \gls{BBP} hardware, this data was located in flash.
 

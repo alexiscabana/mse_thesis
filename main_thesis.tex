@@ -67,15 +67,15 @@
 %\input{tex/zusammenfassung.tex}
 }
 
-\tableofcontents
+%\tableofcontents
 
-\listoftables
+%\listoftables
 
-\listoffigures
+%\listoffigures
 
-\listoflistings
+%\listoflistings
 
-\printnoidxglossary[type=acronym,nonumberlist]
+%\printnoidxglossary[type=acronym,nonumberlist]
 {
 % Whole content of the thesis
 \input{tex/introduction.tex}
@@ -89,13 +89,14 @@
 }
 
 
+
 % post-content of thesis
 %\nocite{*} <- use this to list everything, even stuff not cited
 \renewcommand{\bibname}{References}
 \printbibliography[heading=bibintoc,title={References}]
 
-\begin{appendices}
-\input{tex/appendix.tex}
-\end{appendices}
+%\begin{appendices}
+%\input{tex/appendix.tex}
+%\end{appendices}
 
 \end{document}
