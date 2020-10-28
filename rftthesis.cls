@@ -114,9 +114,9 @@
 \pagestyle{scrheadings}
 
 \ohead[]{\headmark}
-\ihead[]{}
+\ihead[]{Institut f{\"u}r Luft- und Raumfahrt}
 \chead[]{}
-\ofoot[\pagemark/\pageref{LastPage}]{\pagemark/\pageref{LastPage}}
+\ofoot[\thepage]{\thepage}
 \ifoot[]{}
 \cfoot[]{}
 
