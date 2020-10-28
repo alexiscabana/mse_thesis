@@ -1,24 +1,20 @@
 {
 \setlength{\parindent}{2em}
 \chapter{BBPSim Snapshotting}\label{cha:bbpsim-impl}
-Previously, it was seen that the \gls{BBPSim} environment was composed of mainly three layers. The flight software was defined as its own layer, while the other two, the operating system and hardware layers, were built around the first one. In \autoref{cha:das-impl}, techniques for external access to flight software variables and execution structure were detailed. The main reason for all this manipulation was that no code modification to the FSW was allowed. However, code in the BBPSim domain (OS and HW layers) did not suffer from the same constraint. 
+Previously, it was seen that the \gls{BBPSim} environment was composed of mainly three layers. The flight software was defined as its own layer, while the other two, the operating system and hardware layers, were built around the first one. In \autoref{cha:das-impl}, techniques for external access to flight software variables and execution structures were detailed. The main reason for all this manipulation was that no code modification to the FSW was allowed. However, code in the BBPSim domain (OS and HW layers) did not suffer from the same constraint. 
 
-In this chapter, the design and implementation of the checkpointing strategy of the BBPSim layer is described, along with some possible other solutions. An analysis of the necessary BBPSim data to package with the checkpointing artifact is first done. Then, details about the practical implementation are given along with the general architecture. 
-
-\section{Design Constraints}
-- saving, then restoring and saving again (no stepping) must output the same state file (except the header) as much as possible, not possible because of memory pointers
-- The DAS memory musn't contain any information about addresses of variables in the OS API, because these addresses WILL change from sim to sim
+In this chapter, the design and implementation of the checkpointing strategy of the BBPSim layer is described, along with some possible other solutions. An analysis of the necessary BBPSim data to package with the checkpointing artifact is first done. Then, details about the practical implementation are given along with the general architecture. Finally, the global performance of the save \& restore feature is discussed and compared to the requirements. 
 
 \section{Layer Analysis}
-Saving the layers of the environment first requires one to broadly understand how BBPSim was designed in order to produce a quality solution tailored for its needs. In \autoref{sec:fsw-outline}, it was seen that, to offer a good ecosystem for the flight software's testing, \gls{BBPSim} reimplemented embedded operating system functionalities that were only available on the Deos \gls{RTOS}. Since the simulation framework was developed to run solely on the Linux platform, these functionalities had to be translated to use the available constructs. In parallel, the FSW also used the components present on the custom hardware designed for the Dream Chaser Communication Subsystem (called the \gls{BBP}). This required the simulator to emulate those behaviors as well.
+Saving the layers of the environment first requires one to broadly understand how BBPSim was designed in order to produce a quality solution tailored for its needs. In \autoref{sec:fsw-outline}, it was seen that, to offer a good ecosystem for the flight software's testing, \gls{BBPSim} reimplemented embedded operating system functionalities that were only available on the Deos \gls{RTOS}. Since the simulation framework was developed to run solely on the Linux platform, these functionalities had to be translated to use only available constructs. In parallel, the FSW also used the components present on the custom hardware designed for the Dream Chaser Communication Subsystem (called the \gls{BBP}). This required the simulator to emulate those behaviors as well.
 
-In practice, every software or hardware utility mimicked was encapsulated by a child class of \texttt{CSimModule}. In BBPSim, a simulation module was represented as being an entity that can be initialized, processed (at every step of 20ms) and resetted. \autoref{fig:os-layer} and \autoref{fig:hw-layer} present a brief summary of the general inheritance design of the modules. 
+In practice, every software or hardware utility that was mimicked was encapsulated in a child class of \texttt{CSimModule}. In BBPSim, a simulation module was represented as being an entity that can be initialized, processed (at every step of 20ms) and resetted. \autoref{fig:os-layer} and \autoref{fig:hw-layer} present a brief summary of the general inheritance model of the modules. 
 \begin{figure}[htbp]
 	\vspace{12pt}
 	\centering
 	\footnotesize
 	\includesvg[width=\linewidth]{svg/os-layer}
-	\caption{Shortened UML diagram of the operating system layer.}
+	\caption{Shortened UML class diagram of the operating system layer.}
 	\label{fig:os-layer}
 \end{figure}
 \begin{figure}[htbp]
@@ -26,38 +22,38 @@ In practice, every software or hardware utility mimicked was encapsulated by a c
 	\centering
 	\footnotesize
 	\includesvg[width=\linewidth]{svg/hw-layer}
-	\caption{Shortened UML diagram of the hardware system layer.}
+	\caption{Shortened UML class diagram of the hardware system layer.}
 	\label{fig:hw-layer}
 \end{figure}
 
 Particularly in \autoref{fig:hw-layer}, it is possible to observe that the modules could also contain multiple child modules. Each object held data specific to the component it was simulating. This of course reflects the object-oriented concepts of the software, which was written in \Cpp.
 
-This thesis argues that the BBPSim-domain modules and managers (from the OS and HW layers) all had specifically different data to backup in the checkpointing artifact. For example, when saving an ongoing simulation the Mutex Manager must of course save the created mutexes up to the SAVE command, and on its side, the Bootstrap must save where the simulation is located in its bootloader sequence. It is easy to see that a general strategy was needed in order to satisfy the many different types of data that could be saved. And with the tree-like design of BBPSim, the solution was required to also be flexible with its heuristic. 
+This thesis argues that the BBPSim-domain modules and managers (from the OS and HW layers) all had specifically different data to backup in the checkpointing artifact. For example, when saving an ongoing simulation, the Mutex Manager must of course save the created mutexes up to the SAVE command, while the Bootstrap had to save where the simulation was located in its bootloading sequence. It is easy to see that a general strategy was needed in order to satisfy the many different types of data that could be saved. And with the tree-like design of BBPSim, the solution was required to also be flexible with its heuristic. 
 
 \section{Checkpointing Strategy}
-It was seen, in \autoref{cha:prod-artifact}, that the artifact produced by a checkpoint was decided to be made up of several record blocks chained together. This formatting approach was useful in this context, because it could clearly fragment data that belonged to various different entities within the simulator, but still unify everything simultaneously. 
+It was seen, in \autoref{cha:prod-artifact}, that the artifact produced by a checkpoint was decided to be made up of several record blocks chained together. This formatting approach was useful in this context, because it could clearly fragment data that belonged to various entities within the simulator, but still unify everything simultaneously. 
 
 The way this data would be gathered and serialized in binary would still need to be resolved. Since this was object-oriented code, the general guideline was to keep everything encapsulated: each simulation module should know how to checkpoint \textit{itself}. Practically, there were various possible implementation strategies to investigate:
 \begin{itemize}
-	\item \textbf{One RecordBlock interface, Overload input stream operator}. This is an easy saving mechanism. Every type of record block would have to be defined as its own class, that knows how to serialize itself in the binary checkpointing artifact using the "\texttt{<<}" operator. At saving time, the modules would create and fill their record blocks objects and serialize them inside the file. The serialization could have been done with the boost library\cite{online:boost}.
+	\item \textbf{One RecordBlock interface, Overload input stream operator}. This is an easy saving mechanism. Every type of record block would have to be defined as its own class, that knows how to serialize itself in the binary checkpointing artifact using the input stream operator ("\texttt{<<}"). At saving time, the modules would create and fill their record blocks objects and serialize them inside the file. The serialization could have been done with the boost library\cite{online:boost}.
 	
 	This approach was considered too code-heavy. It relegated the responsibility of serialization to yet another class (instead of the simulation module), and the relationship between the module and the record block classes would have been too fuzzy. In addition, since the record blocks had to be tagged, measured and CRC'ed before getting written to file, this architecture did not produce an elegant solution. 
-	\item \textbf{Define record blocks as nested class within their modules}. This wasn't a good approach, because the amount of type of RB was just too high. In \autoref{fig:hw-layer}, \texttt{CRiof} contains multiple submodules itself. This would have made the header files way too big. Not only that, the definition of record block would have been way too similar with the module that would create them. 
+	\item \textbf{Define record blocks as nested classes within their modules definition}. This wasn't a good approach, because the quantity of different \gls{RB} was just too high. For instance, in \autoref{fig:hw-layer}, \texttt{CRiof} contained multiple submodules itself. This would have made the header files way too big. Not only that, the definition of record block would have been way too similar with the module that would create them. 
 	\item \textbf{Iterate the modules with a builder-like object}. This was the adopted solution. The builder object would expose a set of methods to the modules and let them organize their data to build their own record blocks, without having to define more types. At restore time, the inverse operation would be done with a different kind of object.
 \end{itemize}
 
 \subsection*{\Cpp Interfaces}
-In that sense, the \texttt{CRestorableObject} interface was created. Every object that would want the ability to save and restore itself could implement the interface and organize their own checkpointing/restoring. This is depicted in \autoref{fig:rest-obj}. This solution followed the standard guidelines of object-oriented programming, which is, in this case, the encapsulation of behavior that is common to multiple types of objects. 
+In that sense, the \texttt{CRestorableObject} interface was created. Every object that would want the ability to save and restore itself could implement the interface and organize its own checkpointing/restoring. This is depicted in \autoref{fig:rest-obj}. This solution followed one of the standard guidelines of object-oriented programming, which is, in this case, to encapsulate the behavior common to multiple types of objects. 
 \begin{figure}[htbp]
 	\centering
 	\vspace{12pt}
 	\footnotesize
 	\includesvg[width=.6\linewidth]{svg/rest-obj}
-	\caption{UML diagram of the \texttt{CRestorableObject} interface.}
+	\caption{UML class diagram of the \texttt{CRestorableObject} interface.}
 	\label{fig:rest-obj}
 \end{figure}
 
-From that point, a standard method for saving and restoring was defined. When a SAVE command gets executed, a \texttt{CEnvironmentSaver} instance iterated through all the simulation modules and gathered the relevant data. At restore time, the \texttt{CEnvironmentRestorer} object would do the reverse operation. For both member functions, an argument pointer could be specified. The addition of this parameter was justified by the tree-like design of the simulation modules. Since some modules could be instantiated multiple times (like \texttt{CRt1553} of \autoref{fig:hw-layer}), it was necessary for their owner to differentiate them. The returned value specifies whether the operation was successful, not successful or completed with warnings. 
+From that point, a standard method for saving and restoring was defined. When a SAVE command gets executed, a \texttt{CEnvironmentSaver} instance iterated through all the simulation modules and gathered the relevant data. At restore time, the \texttt{CEnvironmentRestorer} object would do the reverse operation. For both pure virtual functions, an argument pointer could be specified. The addition of this parameter was justified by the tree-like design of the simulation modules. Since some modules could be instantiated multiple times (like \texttt{CRt1553} of \autoref{fig:hw-layer}), it was necessary for their owner to differentiate them. The returned value specifies whether the operation was successful, not successful or completed with warnings. 
 
 Once the iteration process was defined, the \texttt{CEnvironmentSaver} class needed to fulfill the needs of the different simulation modules. The UML diagram of the class is given in \autoref{fig:env-saver} It was mentioned previously that the object was defined as being a builder. In the case of the checkpointing of the OS and HW layers, it was defined that there were two different types of payload to be contained in a record block: static and dynamic. 
 
@@ -65,34 +61,112 @@ Once the iteration process was defined, the \texttt{CEnvironmentSaver} class nee
 	\centering
 	\vspace{12pt}
 	\footnotesize
-	\includesvg[width=.65\linewidth]{svg/env-saver}
-	\caption{UML diagram of the CEnvironmentSaver interface.}
+	\includesvg[width=.75\linewidth]{svg/env-saver}
+	\caption{UML class diagram of the CEnvironmentSaver interface.}
 	\label{fig:env-saver}
 \end{figure}
 
 
-Dynamic blocks, were blocks that were created and built on-demand by the simulation modules, specifically when the \texttt{CEnvironmentSaver} was iterating them while gathering the RBs. This was done by using a sequence of member functions together. The user must first begin a block by specifying its type with \texttt{BeginBlock()} . The data could then be inserted into the record block with either \texttt{AddBytesToBlock()}, for adding raw bytes, or the \texttt{AddToBlock()} template method, which could take any type of data as input. After adding everything necessary, the user would then call \texttt{EndBlock()}, which would conclude the block by calculating its CRC16. An example usage of the class for the FIFO Manger is given in \autoref{code:env-saver-use}. One can see that once the necessary data is included in the block in progress, the Manager lets the FIFO queue save its own messages recursively by inheriting from \texttt{CRestorableObject}. This was once again done with the goal of encapsulating the classes.
+Dynamic blocks, were blocks created and built on-demand by the simulation modules, specifically when the \texttt{CEnvironmentSaver} was iterating them while gathering the RBs. Creating such a block was done by using a sequence of member functions together. The user had to first begin a block by specifying its type with \texttt{BeginBlock()}. The data could then be inserted into the record block with either \texttt{AddBytesToBlock()}, for adding raw bytes, or with the \texttt{AddToBlock()} template method, which could take any type of data as input. After adding everything necessary, the user would then call \texttt{EndBlock()}, which would finalize the block by calculating its CRC16 and adding to the list of blocks pending to be written to file. An example usage of this implementation for the FIFO Manger is given in \autoref{code:env-saver-use}. One can see that once the necessary data is included in the block in progress, the Manager lets the FIFO queue save its own messages recursively, because it also inherits from \texttt{CRestorableObject}. This was once again done with the intent of encapsulating the classes.
 
-The static record blocks, on the other hand were defined as containing data that existed statically in memory during the entire checkpointing operation. One example of this type of block would be the content of the \texttt{.bss} and \texttt{.data} sections of the flight software. Since they were contiguous range of memory, the \textit{DAS State Manager} could make an entire record block out of this chunk of memory. 
+The static record blocks, on the other hand, were defined as containing data that existed statically in memory during the entire checkpointing operation. One example of this type of block would be the content of the \texttt{.bss} and \texttt{.data} sections of the flight software. These ranges of memory were not specifically built when the \texttt{SaveTo} method was called, because they already existed. Since they were contiguous ranges of memory, the DAS State Managers could make an entire record block out of these chunks of memory only by specifying pointers. 
 
-Once the simulation modules were all iterated on, all record blocks were built and gathered, which meant that \texttt{DumpToFile()} could then write all the record blocks to the checkpointing artifact. It should be noted that, since there was no restriction on the amount or size of record blocks, each module could add as many record blocks as needed. 
+Once the simulation modules were iterated on, all record blocks were built and gathered. To conclude the checkpointing, \texttt{DumpToFile()} then wrote all the record blocks to the checkpointing artifact, along with the artifact header. It should be noted that, since there was no restriction on the amount or size of record blocks, each module could add as many record blocks as needed. This solution for gathering checkpoint data is akin to the one in \autoref{sec:virtualbox} where the hypervisor modules saved themselves in VirtualBox.
 
-- important for the saving to never be conditional : we must able to predict the length of every block either directly or by reading some elements of it and then making a prediction
-- constraints (- just das variables are ~ 100MB (.bss and .data), so state files are BIG, big file handling in C++  (https://stackoverflow.com/questions/34751873/how-to-read-huge-file-in-c))
+At restore time, a similar but reverse implementation was designed. This is reflected in the \texttt{CEnvironmentRestorer} class. When initializing a simulation, a \texttt{CEnvironmentRestorer} instance started by reading the header of the checkpointing artifact. This is where the current \pathmono{libBbpSim.so} loading address was validated, to make sure it was loaded at the same address as when producing the checkpointing artifact. The restorer then read the record blocks, validated their CRC, and iterated through the simulation modules, which had to implement their own restoring sequence.
 
-ENVRESTORER : (a type of Iterator design pattern where you query blocks, encapsulates how blocks are created from a state file and handled, hides complexity from managers) At restore, the binary file is loaded in memory and a list of TlvBlocks is again made available to managers to restore to a previous state. a block type is linked to one and only one manager. Check for bbpsim version, do a decision state diagram
+\begin{figure}[htbp]
+	\centering
+	\vspace{12pt}
+	\footnotesize
+	\includesvg[width=.75\linewidth]{svg/env-restorer}
+	\caption{UML class diagram of the CEnvironmentRestorer interface.}
+	\label{fig:env-restorer}
+\end{figure}
 
-\section{Error Handling}
-- Error in the save is warning because doesn't affect simulation, but error in restore is 
+The main focus of the \texttt{CEnvironmentRestorer} class was to organize the record blocks and make them easily accessible through a small set of function. It was designed to be comparable to an implementation of the Iterator design pattern by providing a way to access the elements of the artifact sequentially without exposing the underlying representation\cite{misc:iterator-des-pat}. This is depicted in \autoref{fig:env-restorer}. When a module restores itself, it must first query for a certain type of block via the \texttt{QueryBlockType()} method. The module can then read any amount of a defined type from the block by using the \texttt{ReadFromBlock()} template method. This reading operation must be made in the same order as the saving, as \autoref{code:env-restorer-use} shows.
 
-\section{Packaging the File System}
+During the restoring operation, it was important for the simulation modules to know the size their related record blocks. Since the interpretation of bytes inside a record block was relegated to them, it was their responsibility to produce blocks of a predictable size. Therefore, a conditional addition to the record block, like the one below, was not permitted.
+\begin{minted}{c++}
+if(ptrToVariable != nullptr) {
+	envSaver.AddToBlock(*ptrToVariable);
+}
+\end{minted}
 
-\section{Saving the Shared Memory}
+As mentioned previously, the checkpointing strategy was designed as a global approach for the saving and restoring of any simulation modules in \gls{BBPSim}. Since every one of them had different data to checkpoint, each had to have a custom implementation fo the \texttt{CRestorableObject} interface. This solution was considered scalable, because adding in a new components would only mean implementing its saving and restoring methods, which would further guide the design.
+
+\section{Checkpointed Items}
+Knowing what to include in the checkpointing artifact was vital in ensuring a stable restoring sequence. Before saving everything, a simple recipe was put in place to identify which variables had to be saved. First of all, it was possible to divide a simulation into four distinct phases that happened sequentially :
+\begin{enumerate}
+	\item \textbf{Resource creation}, when the allocation and construction of the simulation modules took place.
+	\item \textbf{Modules initialization}, when the INIT command was sent (\mintinline{c}|module->Initialize()|).
+	\item \textbf{Environment loading}, an \ul{optional} phase when the simulation environment (all the modules) got restored from a file.
+	\item \textbf{Normal use}, when the user would be stepping. 
+\end{enumerate}
+
+The process that was applied to every member variables/component of every module was simple. If the variable was set in phases 1 or 2, and then never rewritten, then there was no need to save it, since those steps were always executed in every simulation. If the variable was a pointer, the strategy to save it depended on the context, but usually the object being pointed was serialized and saved, since a pointer couldn't be saved because it would invalidated in the future. As for simple data, like \texttt{struct}s and \gls{POD} variables, they were included byte-for-byte in the relevant record block.
+
+By following this plan for every components, one could extract a description of the items saved by some important OS modules, like the one given in  \autoref{tab:sim-mods-save}. 
+
+\begin{table}[htbp]
+	\centering
+	\ra{1.2}
+	\begin{tabularx}{\linewidth}{l X}
+		\toprule
+		\textbf{Module} & \textbf{Items Saved}\\
+		\midrule
+		Boostrap & {General state of the booting sequence: current boot delay and countdown in steps}\\
+		\midrule
+		FIFO Manager & {For each user-created queue: ID, attributes and every message in the queue in the same order (see \autoref{code:env-saver-use})}\\
+		\midrule
+		Mutex Manager & {For each user mutex: ID and name.}\\
+		\midrule
+		Sem. Manager & {For each user semaphore: ID, name and state (count).}\\	
+		\midrule
+		Mailbox Manager & {Similar to the FIFO Manager, since mailboxes were implemented as 1-sized queues.}\\
+		\midrule
+		Scheduler & {For each flight software thread:
+		\vspace{-6pt}
+		\begin{itemize}\setlength\itemsep{0em}
+			\item ID and name
+			\item The task's function address (pointer)
+			\item The execution stack and stack pointer placement information
+			\item The threads CPU register set at the last checkpoint (see \autoref{sec:das-exec-restore})
+		\end{itemize}	
+		}\\
+		\bottomrule
+	\end{tabularx}
+	\caption{Non-exhaustive list of items saved when executing a checkpoint.}
+	\label{tab:sim-mods-save}
+\end{table}
+
+It is important to note, in the case of the mutexes, that their state (locked/unlocked) wasn't saved. At restore time, they would all be restored to be in the unlocked state. This was considered a better choice for two reasons: 
+\begin{enumerate}
+	\item Flight software tasks always acquired and released mutexes in the same task loop (i.e. from scheduling to calling \texttt{waitUntilNextPeriod()})
+	\item Because \gls{BBPSim} used the pthread library in the background, mutexes of types \texttt{pthread_mutex_t} were used. Using this type of mutex requires the user to always release a mutex from the same thread as the one which acquired it. Otherwise, the specification mentioned undefined behavior\cite{online:pthread-mutex}. This meant that the restored threads would have had to recreate the mutexes they themselves created in the previous simulation run. This was considered too complex to implement.
+\end{enumerate}
+
+\subsection*{File System}
+To continue the serialization process, the content of the flight software's emulated file system also needed to be included in the checkpointing artifact. This was due to the operating system layer reimplementing an API to manipulate files located in the Linux machine's file system. On the actual \gls{BBP} hardware, this data was located in flash.
+
+First, by using a Linux standard program, it was possible to zip the file tree, containing some binary files, into one archive that was serialized into a record block using the command:
+\begin{minted}{bash}
+zip -r file/tree/root *.bin
+\end{minted}
+At restore time, the archive would be unzipped by a similar command and the file tree would be copied back or overwritten at the same location on the Linux machine.
+
+Secondly, since the manipulation of files implied that the operations could span multiple simulation steps, the state of the currently opened file was also included in the checkpointing artifact. At saving time, the file would be reopened and the position of the reading cursor within the file was also restored. 
+
+\subsection*{Shared Memory}
+Finally, the content of the Shared Memory was considered very important to include in a checkpoint, since this object represented, to some degree, the state of various hardware communication modules. As mentioned previously, the Shared Memory was a user-allocated \texttt{struct} instance. As such, it was trivial to include the raw bytes in the checkpointing artifact.  
 
 \section{Save \& Restore Performance}
-O(2n pour la memoire quand tu build un bloc., puisque cest un stringstream qui fait juste copier
-- overhead incured by checkpointing mechanism in simulation (block building memory overhead)
+In \autoref{sec:reqs}, it was mentioned that the save \& restore feature was guided by many customer requirements. Some of these requirements concerned the general performance of BBPSim, which directly affected the implementation of the feature. Particularly, requirements DCMS-BBP-56 and DCMS-BBP-69 (see \autoref{tab:customer-reqs}) were the main reason for the entire feature's performance goals.
 
-\section{Code Refactor}
-- Refactor of all the previous code. change to STL containers, code before was C disguised as C++. upgraded to c++11
+\autoref{cha:das-impl} mentioned that the restoring of DAS threads was very fast. By using the \texttt{/usr/bin/time} Linux profiling tool, it was possible to quantify that metric at  850ms to 1 second on average, well below the 5 min imposed by DCMS-BBP-56. As for the memory usage of the BBPSim simulator, results using the same profiling tool for RAM indicated a maximum memory usage of a little bit more than 261MB when restoring, which also fulfilled requirement DCMS-BBP-69. The output can be seen in \autoref{app:ram-profiling}. 
+
+A lot of the memory usage could be attributed to the handling of statically-allocated flight software variables, located in the \texttt{.bss} and \texttt{.data} sections. In \autoref{sec:das-mem-restore}, it was seen that these sections took up about 100MB of space in RAM. However, the RAM usage in \autoref{app:ram-profiling} showed a usage of more than two and a half times that amount. This was attributed to the fact that, at restore time, the checkpointing artifact got loaded, read and \ul{copied} into memory by the \texttt{CEnvironmentRestorer} before it iterated through all simulation modules. This meant that, during the restoring process, space was allocated for both the big static record blocks and the real statically-allocated DAS variables at the same time. 
+
+Another notable value included in this result is the number of page faults. By instrumenting the restoring code using the \texttt{valgrind} profiling tool's utilities, it was possible to see that a lot of cache misses happened during the reset of the DAS State Manager, as part of the restoring sequence (see \autoref{app:valgrind-profiling}). Cache misses are a non-desirable latency caused by the CPU accessing sections of RAM for the first time. Before being written or read, these blocks of memory must first be brought into the CPU's cache\cite{misc:cache-misses}. In BBPSim, the DAS State Manager module was responsible to copy back the content of the \texttt{.bss} and \texttt{.data} sections of the flight software into their real memory ranges. At restore time, these sections would get overwritten with a big \texttt{memset}. Since the computer didn't use those pages of the computer memory within the program's life up to the restoring time, the memory accesses caused a lot of page faults and cache misses that slowed down the feature's performance.
+
 }
