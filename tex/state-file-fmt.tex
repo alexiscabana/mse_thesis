@@ -13,7 +13,7 @@ It was also considered essential to be able to identify a checkpointing artifact
 Finally, even though a requirement concerning the number of artifacts was imposed, it didn't mention the usage of one format over another. For this reason, different alternatives were taken into consideration. 
 
 \section{State File Extension}
-Since a lot of data had to be saved in the course of a simulation checkpoint, an appropriate file extension had to be determined. In the context of the save and restore feature design, it was important to evaluate the various file options. First of all, multiple potential candidates were researched. Then, each format was evaluated based on its general qualifiers and how well it performed in certain areas critical to the design, always bearing the constraints of \autoref{sec:file-constraints} in mind. To justify the decision quantitatively, a weighted rating in percent was performed. The assessment is shown in \autoref{tab:file-fmts}.
+Since a lot of data had to be saved in the course of a simulation checkpoint, an appropriate file extension had to be determined. In the context of the save and restore feature design, it was important to evaluate the various format options. First of all, multiple potential candidates were researched. Then, each format was evaluated based on its general qualifiers and how well it performed in certain areas critical to the design, always bearing the constraints of \autoref{sec:file-constraints} in mind. To justify the decision quantitatively, a weighted rating in percent was performed. The assessment is shown in \autoref{tab:file-fmts}. It should be noted that some criteria have a non-negligible subjective aspect.
 
 \begin{table}[htbp]
 	\vspace{12pt}
@@ -21,7 +21,7 @@ Since a lot of data had to be saved in the course of a simulation checkpoint, an
 	\ra{1.3}
 	\begin{tabularx}{\linewidth}{l c c c c c}
 		\toprule
-		&{\bfseries Readability}&{\bfseries Flexibility}&\makecell{\bfseries Library\\\bfseries Support}& \makecell{\bfseries Data-to-Size\\ \bfseries Ratio}&\multirow{3}{*}{\bfseries Total}\\
+		&{\bfseries Accessibility}&{\bfseries Flexibility}&\makecell{\bfseries Library\\\bfseries Support}& \makecell{\bfseries Data-to-Size\\ \bfseries Ratio}&\multirow{3}{*}{\bfseries Total}\\
 		\cmidrule{2-5}
 		\multicolumn{1}{r}{\small Weight:}&{\small 5\%}&{\small 40\%}&{\small 15\%}&{\small 40\%}&\\
 		\midrule
@@ -37,13 +37,13 @@ Since a lot of data had to be saved in the course of a simulation checkpoint, an
 
 The criteria used to assess of a format's performance are described as follows:
 \begin{itemize}
-	\item {\bfseries Readability}. How well can the format be read by a human? Is it possible to manually modify the file easily?
-	\item {\bfseries Flexibility}. How customizable is the format with regard to data structure?
+	\item {\bfseries Accessibility}. How well can the format be read by a human? Is it possible to manually modify the file easily? 
+	\item {\bfseries Flexibility}. How customizable is the format with regard to how data is structured?
 	\item {\bfseries Library Support}. Is there extensive, open-source support for this file format's generation?
 	\item {\bfseries Data-to-Size Ratio}. What is the overhead of the serialization language? Does it scale well to hold binary data? Since the flight software contains variables that amount to around 100MB in total size, this criterion was weighted accordingly. 
 \end{itemize}
 
-Even though all the formats score reasonably well in flexibility and library support, some values from \autoref{tab:file-fmts} are still outsiders. For example, the binary format was given a score of 100 in data-to-size ratio, at the expense of readability. This is due to the nature of the format itself. With regard to data compressibility, there is no better than binary (assuming maximum theoretical data entropy\cite{art:shannon}). In the same category, for instance, it was found that XML needs to use the Base64 binary-to-text encoding to embed binary data, which can encode 6 bits of data into an \gls{ASCII} character that takes 8 bits\cite{art:base64}. This 33\% overhead is completely removed in the binary format. 
+Even though all the formats score reasonably well in flexibility and library support, some values from \autoref{tab:file-fmts} are still outsiders. For example, the binary format was given a score of 100 in data-to-size ratio, at the expense of accessibility. This is due to the nature of the format itself. With regard to data compressibility, there is no better than binary (assuming maximum theoretical data entropy\cite{art:shannon}). In the same category, for instance, it was found that XML needs to use the Base64 binary-to-text encoding to embed binary data, which can encode 6 bits of data into an \gls{ASCII} character that takes 8 bits\cite{art:base64}. This 33\% overhead is completely removed in the binary format. 
 
 Binary also provides great flexibility, because it is up to the users to define a suitable format for their needs. There is no need to stay in the bounds of a defined structure like in the other data serialization languages.
 
@@ -53,7 +53,7 @@ With these reasons in mind, \ul{the binary format became the clear choice} as a 
 Since a binary file presents great flexibility in how the data can be structured, this choice also required the development of a data serialization structure within the file, called a \gls{FBI}.
 
 \subsection*{Record Blocks}
-There are multiple ways of organizing data inside a binary file. The final arrangement is ultimately influenced by the needs of the developer and the application. In the context of this thesis, \autoref{sec:bbpsim-charact} established that a BBPSim simulation was composed of several modules that each operated inside a layer. When saving the state of the simulator, it was thus implicitly defined that the resulting file would need to package the modules' data such that it is easy to retrieve. To address this problem, the concept of \gls{RB} was developed. \autoref{tab:rb-fields} better explains each of the fields.
+There are multiple ways of organizing data inside a binary file. The final arrangement is ultimately influenced by the needs of the developer and the application. In the context of this thesis, \autoref{sec:bbpsim-charact} established that a BBPSim simulation was composed of several modules that each operated inside a layer. When saving the state of the simulator, it was thus implicitly defined that the resulting file would need to package the modules' data such that it is easy to retrieve. To address this problem, the concept of \gls{RB} was developed. \autoref{tab:rb-fields} better explains each of the fields, while said fields are visually shown in \autoref{fig:rb}.
 
 \begin{figure}[h]
 	\vspace{6pt}
@@ -72,7 +72,7 @@ There are multiple ways of organizing data inside a binary file. The final arran
 		\toprule
 		{\bfseries Name}&{\bfseries Size}&{\bfseries Description}\\
 		\midrule
-		Tag & 1 byte & Value that is associated to the content or type of data in the payload.\\
+		Tag & 1 byte & Value that is associated to the content or type of data in the payload. The 256 (2\textsuperscript{8}) different values were considered enough for the purpose of this thesis, since simulation modules typically only required one type of block each (see \autoref{tab:sim-mods-save}), and creating new types of block only for a few bytes presented an overhead.\\
 		\midrule
 		Size & 4 bytes & The length of the payload in bytes. Expressed as an unsigned integer.\\
 		\midrule

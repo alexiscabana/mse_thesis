@@ -4,9 +4,9 @@ Then, \autoref{sec:criu} showed how an outside checkpointing program could layer
 
 From the checkpointee's point of view, both of these techniques never really have a direct effect. They divert and reinterpret the instructions, resource usage, etc., but never influence the internal algorithms functionally. The program always yields the same result.
 
-Although these methods of checkpointing have big transparency benefits by not modifying the program, in the context of big distributed systems, where there can be many millions CPU core, their caveats are amplified:
+Although these methods of checkpointing have big transparency benefits by not modifying the program, in the context of big distributed systems, where there can be many millions of CPU cores, their caveats are amplified:
 \begin{itemize}
-	\item VirtualBox's snapshot size is a huge bottleneck. For each computer, there would be several gigabytes of RAM to save, which quickly becomes unpractical. In addition, for high performance applications, the overhead of running the programs in "containers" OS might outweigh the benefits of modularity.
+	\item VirtualBox's snapshot size is a huge bottleneck. For each computer, there would be several gigabytes of RAM to save, which quickly becomes unpractical. In addition, for high performance applications, the overhead of running the programs in "containers" might outweigh the benefits of modularity.
 	\item Similarly, CRIU's method would also output state files that are too big to handle efficiently. 
 \end{itemize} 
 

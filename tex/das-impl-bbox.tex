@@ -7,7 +7,7 @@ In \autoref{sec:conditions}, it was shown that saving the entire set of statical
 
 In the end, the solution that was adopted involved the handling of DAS object files, \textit{after} they were compiled. Ultimately, no control over the flight software source code was given, but the compilation and building process were alterable. The following sections show how this limited control could be harvested, using a series of manipulations at build time, to give the \gls{BBPSim}-domain objects the required access to save the state of the flight software.
 
-The whole process was quite complex, so one can get confused easily. For better visualization, the manipulations were drawn as a flowchart in \autoref{fig:blackbox-diagram}.
+The whole process was quite complex. For better visualization, the manipulations were drawn as a flowchart in \autoref{fig:blackbox-diagram}.
 
 \subsection*{Linking Process}
 First of all, it is crucial to understand how the linking process of an application is done. As mentioned earlier, when each source code file is compiled by \gls{GCC}, a \texttt{.o} object file is produced. Although this file contains executable code, the object file that would be produced by GCC would, by itself, not be enough to be executable as a stand-alone. The \textit{linker} needs to first process the object files. The one used in the case of this thesis was GNU \texttt{ld} version 2.27.
@@ -125,7 +125,7 @@ extern char __attribute__((weak)) _binary_das_symbol_catalog_txt_start[];
 extern char __attribute__((weak)) _binary_das_symbol_catalog_txt_end[];
 \end{minted}
 
-The results can be better shown by using a binary visualization program\cite{online:binvisio}. \autoref{fig:bin-lib-comp} shows a comparison of the \pathmono{libBbpSim-intermediate.so} and \pathmono{libBbpSim.so} shared objects in binary. Bytes with a value in the \gls{ASCII} character range are represented in blue. Both images read left-to-right with address 0x0 on the left. It is possible to see that a new blue section appear in \autoref{fig:bin-lib-final}, thus confirming that the symbol catalog correctly got included in the final version of the BBPSim library.
+The results can be better shown by using a binary visualization program\cite{online:binvisio}. \autoref{fig:bin-lib-comp} shows a comparison of the \pathmono{libBbpSim-intermediate.so} and \pathmono{libBbpSim.so} shared objects in binary. Bytes with a value in the \gls{ASCII} character range are represented in blue. Both images read left-to-right with address 0x0 on the left. It is possible to see that a new blue section appears in \autoref{fig:bin-lib-final}, thus confirming that the symbol catalog correctly got included in the final version of the BBPSim library.
 
 \begin{figure}[htbp]
 	\centering
@@ -146,7 +146,7 @@ The results can be better shown by using a binary visualization program\cite{onl
 	\label{fig:bin-lib-comp}
 \end{figure}
 
-Since there was no modification to the DAS object files between the two linking process, the variable list taken from \pathmono{libBbpSim-intermediate.so} \textit{was guaranteed} to be the same and in the same order as \pathmono{libBbpSim.so}. This embedding of data also did not violate the ELF specification, which is clear about it's requirements:
+Since there was no modification to the DAS object files between the two linker passes, the variable list taken from \pathmono{libBbpSim-intermediate.so} was \textit{guaranteed} to be the same and in the same order as \pathmono{libBbpSim.so}. This embedding of data also did not violate the ELF specification, which is clear about it's requirements:
 
 \begin{shadedquotation}
 [...] sections and segments have no specified order. Only the ELF header has a fixed position in the file.\cite{online:elf-spec}
