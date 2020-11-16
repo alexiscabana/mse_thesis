@@ -22,7 +22,7 @@ running programs.
 \gls{CRIU} is one those attempts at creating a user-friendly method for checkpointing a Linux program. It is an open-source program \cite{online:criucode} implemented at the user-level, meaning that a piece of software has to run in parallel to the program itself. CRIU has the benefit of not needing to run privileged instructions like a kernel-level checkpointing program would do. However, it still needs a bit of cooperation from the Linux kernel for certain operations.
 
 \subsection*{Overview}
-\gls{CRIU}'s solution is completely different from the one seen in \autoref{sec:virtualbox}, where saving happens for every program running in the guest OS. It bases itself on the fact that it is possible for a user-linked checkpointer library to:
+\gls{CRIU}'s solution is completely different from the one seen in \autoref{sec:virtualbox}, where saving happens for every program running in the guest OS. It bases itself on the fact that it is possible for a user-linked checkpointing library to:
 \begin{itemize}
 	\item Hook on a checkpointee's system calls during its execution.
 	\item Alter the relevant system calls before they get sent to the OS.
@@ -86,6 +86,6 @@ pmap -x <pid>
 \end{minted}
 The command lists the address and size of the different allocated sections inside the tracee's \gls{VMA} range. In addition, the utility gives the "dirtyness"  (whether the section has once been written to), the permissions and even the mapping (if the section is code, stack, shared object, etc.) each section is associated with. The usage of \mintinline[]{bash}|pmap| doesn't require elevated privileges. However, since a read-write access to the content of the memory pages from other applications is forbidden for security reasons, CRIU is required to "be present" inside the checkpointee's virtual memory address range. This is the reason why \pathmono{libcriu.so} has to be linked in the compilation phase and loaded at runtime. 
 
-When executing a "dump" operation, CRIU fetches the list of memory pages part of the checkpointee's VMA range and saves them one-by-one. 
+When executing a "dump" operation, CRIU fetches the list of memory pages part of the checkpointee's VMA range and saves them one by one. 
 
 \hfill\textit{Relevant file }: \pathmono{criu/mem.c}.

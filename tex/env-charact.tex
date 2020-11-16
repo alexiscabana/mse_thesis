@@ -3,7 +3,7 @@
 \chapter{BBPSim Framework Characterization}\label{cha:sim-env}
 Before proceeding to any design, it was important to first thoroughly characterize the setting in which the save \& restore was implemented. Fundamentally, this thesis was an integration project, and thus the checkpointing feature had to be merged coherently in the previously existing environment.
 
-This chapter better describes the main driving factors in the design of the feature. From user and customer requirements to technical considerations, it serves as the basis on which everything was subsequently built.
+This chapter describes the main driving factors in the design of the feature. From user and customer requirements to technical considerations, it explains the basis on which everything was subsequently built.
 
 \section{Requirements}\label{sec:reqs}
 In the context of the \gls{DCCS}, Sierra Nevada Corporation subcontracted the entire design and implementation of the communications subsystem to \gls{MDA}. \gls{SNC} had clear goals with Dream Chaser, and for this multi-company undertaking to be properly organized, a hierarchical list of requirements had to be produced. The list was then given to the relevant subcontractors so they could guide themselves in the design of their subsystem. The final product could then be analyzed to assess how well it met the expectations. 
@@ -14,7 +14,7 @@ In the case of this thesis, two types of requirements were driving factors in th
 
 \subsection*{Customer Requirements}
 
-Throughout the thesis work, the customer requirements of the entire \gls{BBPSim} ecosystem were taken as the main drivers to follow for the development. As a measure of legal prudence, the integral list of requirements cannot be made available in this document. \autoref{tab:customer-reqs} lists several of them that relate to the development of the checkpointing feature.  
+Throughout the thesis, the customer requirements of the entire \gls{BBPSim} ecosystem were taken as the main drivers to follow for the development. As a measure of legal prudence, the integral list of requirements cannot be made available in this document. \autoref{tab:customer-reqs} lists several of them that relate to the development of the checkpointing feature.  
 \begin{table}[htbp]
 	\vspace{12pt}
 	\centering
@@ -67,7 +67,7 @@ As mentioned earlier, a list of user requirements was also compiled beforehand, 
 
 As it's possible to see in \autoref{tab:user-reqs}, one of the reasons these requirements were chosen was to enforce a certain user-friendliness for both the customer and the verification and validation team. In that sense, requirements U01 and U03 focused on that goal: to make the feature easy to use, test and integrate within the V\&V environment. In particular, the inclusion of U03 was driven by the fact that a state file is much easier to manipulate programatically than a workspace or combination of files.
 
-On top of that, the addition of requirement U02 was prompted by the added encapsulation of the task. In the end, adding in a feature to \gls{BBPSim} should not affect the flight software, even if the simulator is its testing framework. The FSW was to be taken as a "black box". Not altering the flight software meant that:
+On top of that, the addition of requirement U02 was prompted by the added encapsulation of the task. In the end, adding a feature to \gls{BBPSim} should not affect the flight software, even if the simulator is its testing framework. The FSW was to be taken as a "black box". Not altering the flight software meant that:
 \begin{enumerate}
 	\item The checkpoint/restore added code would be located in a single repository, decreasing maintenance costs.
 	\item Only one piece of software had to be completely understood, decreasing ramp-up costs.
@@ -78,7 +78,7 @@ On top of that, the addition of requirement U02 was prompted by the added encaps
 Since the save \& restore feature relied on the existence of the \gls{BBPSim} simulator, it was important to first describe and understand the simulator in details before starting the design phase. For this reason, the present section further demonstrates the capabilities and the operation of \gls{BBPSim}, that served as constraints to the development of the feature.
 
 \subsection*{Code Execution Environment}
-As mentioned earlier in \autoref{sec:intro-background}, \gls{BBPSim} was ordered by \gls{SNC} to be part of a bigger, system-wide simulator called the \gls{DCMS}. In that regard, \gls{BBPSim} was delivered as a simple \pathmono{.so} file, bundled with its relevant headers. The \pathmono{.so} extension refers to the Linux Shared Object extension, more commonly known as a \textit{dynamic library} within the Windows ecosystem (\pathmono{.dll} file). For the rest of this thesis, the two terms are used interchangeably, since they both represent the same concept of relocatable object.
+As mentioned earlier in \autoref{sec:intro-background}, \gls{BBPSim} was ordered by \gls{SNC} to be part of a bigger, system-wide simulator called the \gls{DCMS}. In that regard, \gls{BBPSim} was delivered as a simple \pathmono{.so} file, bundled with its relevant headers. The \pathmono{.so} extension refers to the Linux Shared Object extension, more commonly known as a \textit{dynamic library} within the Windows ecosystem (\pathmono{.dll} file). For the rest of this thesis, the two terms are used interchangeably, since they both represent the same concept of a relocatable object.
 
 The usage of such an object is fairly straightforward. A Linux software developer wanting to make use of a dynamic library only has to link it with the \inlinecmd{-lLibraryName} flag when compiling its code with GCC. Because the library is already compiled, it also needs to provide "access points" to the functions, classes and types it publicly defines to the compiler. This is done with the help of header files, where the public API of the shared object is revealed. In their own programs, users of a certain dynamic library see and use only identifiers provided in the header files .
 
@@ -94,7 +94,7 @@ In the context of the \gls{BBP} simulator, the code that was included in the lib
 \subsection*{Interaction Layers}
 As mentioned earlier, the deliverable to the client had as a goal to provide a suitable environment for the simulated Dream Chaser flight software to be tested on a Linux machine. The two software domains had to co-exist so that a simulation done on said Linux computer would be functionally equivalent to running the code on the actual embedded platform. 
 
-As a design guideline, the Dream Chaser team implemented the \gls{BBPSim} environment in multiple layers that interface at different levels with the flight software. How those layers interact together is better shown in \autoref{fig:bbpsim-layers}, where \gls{DAS} is taken as the core component to which the other layers must adapt.
+As a design guideline, the Dream Chaser team implemented the \gls{BBPSim} environment in multiple layers that interface at different levels with the flight software. How those layers interact together is better shown in \autoref{fig:bbpsim-layers}, where \gls{DAS} is taken as the core component to which the other layers had to adapt.
 
 \begin{figure}[htbp]
 	\vspace{12pt}
@@ -110,18 +110,18 @@ In practice, the shared memory is implemented as a single block of user-provided
 
 As for the HW layer, it emulates the hardware components and communication modules of the BBP by containing an implementation of the functionalities offered by the BBP in software. Even though the hardware layer technically incorporates the OS layer in \autoref{fig:bbpsim-layers}, it is useful to think of them as being separated for the rest of this thesis.
 
-As stated before, the FSW code is written as if it was executed on an embedded platform. This is why routines in the flight software use the API of an externally-developed \gls{RTOS} named Deos, which provides vital embedded system functionalities like mutexes, semaphores, thread creation and scheduling, etc. This type of operating system is incompatible with a regular PC, due to both platforms being considerably different on multiple aspects. This is where the OS layer's role in the simulation becomes relevant. 
+As stated before, the FSW code was written, rightfully so, as if it was executed on an embedded platform. This is why routines in the flight software use the API of an externally-developed \gls{RTOS} named Deos, which provided vital embedded system functionalities like mutexes, semaphores, thread creation and scheduling, etc. This type of operating system is incompatible with a regular PC, due to both platforms being considerably different on multiple aspects. This is where the OS layer's role in the simulation becomes relevant. 
 
-The OS layer reimplements all the Deos functionalities used in DAS, but adapts the implementation to run on a regular Linux machine. It is, as a matter of principle, a "port" of the RTOS to Linux. For example, in a software-in-the-loop simulation, when the flight software wants to create a new thread, a Linux POSIX thread (pthread) is instead spawned by the layer. All the regular Deos utilities are converted into their Linux equivalent. Additionally, more basic constructs that aren't OS-related, like FIFO queues, are also handled by this layer. \autoref{fig:bbpsim-layers} represents the operating system layer as being comprised inside the hardware layer. This is due to the OS layer being partially dependent on some hardware utilities that the HW layer provides.
+The OS layer reimplemented all the Deos functionalities used in DAS, but adapted the implementation to run on a regular Linux machine. It was, as a matter of principle, a "port" of the RTOS to Linux. For example, during a software-in-the-loop simulation, when the flight software wants to create a new thread, a Linux POSIX thread (pthread) is instead spawned by the layer. All the regular Deos utilities were thus converted into their Linux equivalent. Additionally, more basic constructs that aren't OS-related, like FIFO queues, were also handled by this layer. \autoref{fig:bbpsim-layers} represents the operating system layer as being comprised inside the hardware layer. This is due to the OS layer being partially dependent on some hardware utilities that the HW layer provided.
 
 In \autoref{sec:fsw-outline}, the interfacing and general interaction between the flight software and the HW and OS layers of BBPSim are explained in more details.
 
 \subsection*{Commands}
-While the shared memory layer of BBPSim offers a channel of communication by transfer of data to and from a running simulation, it is also important to understand how a user is able to control its execution. 
+While the shared memory layer of BBPSim offered a channel of communication by transfer of data to and from a running simulation, it is also important to understand how a user was able to control its execution. 
 
-For this purpose, the design of BBPSim includes a set of commands that can be sent by the user. 
+For this purpose, the design of BBPSim included a set of commands that could be sent by the user. 
 \begin{itemize}
-	\item \textbf{INIT}. Basically initializes the simulation. This is where the user provides a reference to the shared memory block. All simulation modules inside the OS and hardware layers are constructed and initialized. If the user wants to restore a past simulation, it must provide the name of the relevant state file as a parameter. Only called once.
+	\item \textbf{INIT}. Initialize the simulation. This is where the user provides a reference to the shared memory block. All simulation modules inside the OS and hardware layers are constructed and initialized. If the user wants to restore a past simulation, it must provide the name of the relevant state file as a parameter. Only called once.
 	\item \textbf{STEP}. Main command of BBPSim. When the user calls this command, BBPSim simulates 20ms of execution on the BBP hardware. This frequency was chosen by \gls{SNC} for its convenience, since Deos threads were either ran every 5, 20 or 100 milliseconds on the BBP hardware, and 20ms was the smallest common multiple of two of these periods.  In practice, one \texttt{step()} executes 1 control loop of the queued DAS threads sequentially, like in \autoref{fig:step-cmd}. After 1 loop, the threads of execution wait again for their turn on the next STEP. The order in which the threads are ran is determined in advance (see \autoref{sec:fsw-outline}). Between two STEP commands, the user is allowed to change the content of the shared memory to send or read messages. \par
 	\begin{minipage}{\linewidth}
 		\vspace{12pt}
@@ -132,12 +132,12 @@ For this purpose, the design of BBPSim includes a set of commands that can be se
 		\vspace{12pt}
 	\end{minipage}
 	It is important to reiterate that this sequential execution must still guarantee an execution time that matches the one the hardware to satisfy requirement DCMS-BBP-32 (See \autoref{tab:customer-reqs}).
-	\item \textbf{SAVE}. Saves the state of the simulation to file for a later restore. This is the subject of this thesis. 
-	\item \textbf{TERM}. Terminates the simulation by stopping the waiting threads, freeing up allocated memory and tearing down the simulation modules. Only called once.
+	\item \textbf{SAVE}. Save the state of the simulation to file for a later restore. This is the subject of this thesis. 
+	\item \textbf{TERM}. Terminate the simulation by stopping the waiting threads, freeing up allocated memory and tearing down the simulation modules. Only called once.
 \end{itemize}
-It is important to note that a command cannot be sent to BBPSim if the previous one hasn't finished. By extension, this means that when the user sends a SAVE command, every DAS thread alive within BBPSim is guaranteed to be in "standby", not executing any code. 
+It is important to note that a command could not be sent to BBPSim if the previous one wasn't finished. By extension, this means that when the user sent a SAVE command, every DAS thread alive within BBPSim was guaranteed to be in "standby", not executing code. 
 
-Concretely, a simulation done with \pathmono{libBbpSim.so} is abstracted to an object. The above commands are sent by calling a member function and the shared memory can be written to or read from between commands.  \autoref{code:example-bbpsim-usage} shows a basic example of how to run a simulation from a user's perspective, and how he or she can manipulate the flight software, through the Shared Memory layer, to put the FSW in the wanted state.
+Concretely, a simulation was abstracted to an object within \pathmono{libBbpSim.so}. The above commands could be sent by calling a member function and the shared memory could be written to or read from between commands.  \autoref{code:example-bbpsim-usage} shows a basic example of how to run a simulation from a user's perspective, and how he or she could manipulate the flight software, through the Shared Memory layer, to put the FSW in the desired state.
 \begin{listing}[H]
 	\begin{minted}{c++}
 SharedMemory* sm = new SharedMemory();
@@ -155,20 +155,20 @@ bbpsim->Term();
 \end{listing}
 
 \section{Flight Software Considerations}\label{sec:fsw-outline}
-Implementing and restoring the embedded software simulated inside \gls{BBPSim} required a comprehensive knowledge of what DAS looked like in source code. It was imperative to understand how it was structured to develop a good custom solution.  As part of the effort, this section describes the RTOS used as well as how the code was broken up into modules for better maintenance.
+Implementing and restoring the embedded software simulated inside \gls{BBPSim} required a comprehensive knowledge of what DAS looked like in source code. It was imperative to understand how it was structured to develop a good, custom solution.  As part of the effort, this section describes the RTOS used as well as how the code was broken up into modules for better maintenance.
 
 \subsection*{Deos}
-In \autoref{sec:bbpsim-charact}, the use of a real-time operating system in the flight software was briefly mentioned. Its inclusion in the project was vital for multiple reasons, embedded utilities being one of them. However, since Dream Chaser is a spacecraft project, performance standards in that area were heightened. This meant that not any embedded OS could be suitable and make guarantees about crucial parameters concerning robustness, timing and responsiveness.
+In \autoref{sec:bbpsim-charact}, the use of a real-time operating system in the flight software was briefly mentioned. Its inclusion in the project was vital for multiple reasons, embedded utilities being one of them. However, since Dream Chaser was a spacecraft project, performance standards in that area were heightened. This meant that not any \gls{RTOS} could be suitable and make guarantees about crucial parameters concerning robustness, timing and responsiveness.
 
-In the end, Deos was chosen as the real-time operating system for the BBP software. It is a "safety-critical time and space partitioned [...], certifiable real-time operating system (RTOS) for Avionics" designed by DDC-I\cite{on:ddci}. Temporal and spatial partitioning are absolutely necessary in the context of Dream Chaser, because they guarantee that:
+In the end, Deos was chosen as the real-time operating system for the BBP software. It is a "safety-critical time and space partitioned [...], certifiable real-time operating system (RTOS) for Avionics" designed by DDC-I\cite{on:ddci}. Temporal and spatial partitioning were absolutely necessary in the context of Dream Chaser, because they guaranteed that:
 \begin{enumerate}
-	\item Potentially faulty flight code on one partition cannot change data on another one. This prevents fault propagation to different components \cite{reiger}.
-	\item Task scheduling becomes a hard requirement. This results in threads never interfering with the fulfillment of other threads' real-time requisites \cite{rufino}.
+	\item Potentially faulty flight code on one partition could not change data on another one. This prevented fault propagation to different components\cite{reiger}.
+	\item Task scheduling became a hard requirement. This resulted in threads never interfering with the fulfillment of other threads' real-time requisites\cite{rufino}.
 \end{enumerate}
 
-In \autoref{fig:step-cmd}, it was shown that the order in which the threads were executed within the \gls{BBPSim} framework was determined in advance. This was done to reflect the approach taken by Deos. For the flight software to be loaded on the embedded hardware, the compilation had to be done through DDC-I's platform integrator (OpenArbor), an integrated development environment for programs that use the Deos RTOS. At every program build, OpenArbor had to run a scheduling algorithm that produced a "timetable" suitable to meet the priority and timing constraints of each thread. If no suitable schedule could be produced, an error was raised. Then, this configuration was included in the code that was loaded on the target, and remained immutable thereafter. It is this process that made the RTOS time-partitioned.
+In \autoref{fig:step-cmd}, it was shown that the order in which the threads were executed within the \gls{BBPSim} framework was determined in advance. This was done to reflect the approach taken by Deos. For the flight software to be loaded on the embedded hardware, the compilation had to be done through DDC-I's platform integrator (OpenArbor), an integrated development environment for programs that use the Deos RTOS. At every program build, OpenArbor has to run a scheduling algorithm that produces a "timetable" suitable to meet the priority and timing constraints of each thread. If no suitable schedule can be produced, an error is raised. In this context, the generated configuration was included in the code that was loaded on the target, and remained immutable thereafter. It was this process that made the RTOS time-partitioned. The \texttt{waitUntilNextPeriod()} API was used by each thread to monitor itself the time it took for one task loop. 
 
-Beyond these capabilities, Deos must also provide an API to use the embedded utilities it provides. Using the RTOS' primitives, from the flight software's perspective, was \ul{only} done through this API. It is this particularity that enabled the OS layer to bind itself to the FSW: by reimplementing the embedded utilities to their counterparts in Linux. \autoref{tab:does-api} gives a list of some of these utilities, covers their related API functions and briefly describes their implementation within \gls{BBPSim}. 
+Beyond these capabilities, Deos also had to provide an API to use the embedded utilities it provided. From the flight software's perspective, using the RTOS' primitives was only done through this API. It is this particularity that enabled the OS layer to bind itself to the FSW: by reimplementing the embedded utilities to their counterparts in Linux. \autoref{tab:does-api} gives a list of some of these utilities, covers their related API functions and briefly describes their implementation within \gls{BBPSim}. 
 
 \begin{table}[htbp]
 	\vspace{12pt}
@@ -198,10 +198,10 @@ Beyond these capabilities, Deos must also provide an API to use the embedded uti
 	\caption{Description of the reimplemented API Utilities and their corresponding Linux primitives.}
 	\label{tab:does-api}
 \end{table}
-Covering the entirety of the API would not be useful in this thesis. Although there are more API functions available, the ones above give a good summary of the kind of reimplementation that was done in the OS layer.
+Covering the entirety of the API would not be necessary for this thesis. Although there were more API functions available, the ones above give a good summary of the kind of reimplementation that was done in the OS layer.
 
 \subsection*{Source Code Characterization}
-As with any project of this scale, a division of the C code into modules had to be done to ensure its maintenance. This is why the Dream Chaser team decided to adhere to a well-known standard of procedural code structure in the embedded systems world. In particular, it is relevant to understand how a simple task loop is designed inside a module when following that standard. 
+As with any project of this scale, a division of the C code into modules had to be done to ensure its maintenance. This is why the Dream Chaser team decided to adhere to a well-known standard of procedural code structure in the embedded systems world. In particular, it is relevant to understand how a simple task loop was designed inside a module when following that standard. 
 \begin{listing}[H]
 	\begin{minted}{c}
 // CanModule.c
@@ -232,7 +232,7 @@ void* CAN_Task(void* arg) {
 	\label{code:example-task}
 \end{listing}
 
-\autoref{code:example-task} clearly shows two important characteristics of flight software. First, dynamic embedded primitive creation is possible inside another task, not only in the initialization (See line \ref{line16}). Secondly, as mentioned in \autoref{tab:does-api}, the completion of one task loop must end with a call to \cppsym{waitUntilNextPeriod()} that yields the CPU to Deos' scheduler. This call is made mandatory by the RTOS, with the aim of correctly partitioning all the tasks' CPU time, preempting them as necessary. On the real hardware, every thread has a CPU budget that represents the maximum amount of time the thread can control the CPU during its period. In the normal case, \cppsym{waitUntilNextPeriod()} is called before that CPU budget runs out. If the CPU budget runs out first, an exception is raised against the thread and the thread is suspended until the start of its next interval, allowing other threads in the system to execute on time. This process is different from the more traditional priority-based schedulers. Finally, it should be noted that the list of parameters shown in the Deos functions was deliberately shortened for the sake of clarity. 
+\autoref{code:example-task} clearly shows two important characteristics of flight software. First, dynamic embedded primitive creation was possible inside another task, not only in the initialization (See line \ref{line16}). Secondly, as mentioned in \autoref{tab:does-api}, the completion of one task loop must end with a call to \cppsym{waitUntilNextPeriod()} that yielded the CPU to Deos' scheduler. This call was made mandatory by the RTOS, with the aim of correctly partitioning all the tasks' CPU time, preempting them as necessary. On the real hardware, every thread had a CPU budget that represented the maximum amount of time the thread could control the CPU during its period. In the normal case, \cppsym{waitUntilNextPeriod()} was called before that CPU budget ran out. If the CPU budget ran out first, an exception was raised against the thread and it was suspended until the start of its next interval, allowing other threads in the system to execute on time. This process is different from the more traditional priority-based schedulers. Finally, it should be noted that the list of parameters shown in the Deos functions was deliberately shortened for the sake of clarity. 
 
-The characterization of DAS threads code is important in the context of this thesis, because, on one hand, it demonstrates the basic interaction of the flight software with its simulation environment. On the other hand, it also reveals at which point, in a given task routine, the execution moves from the flight software domain to the BBPSim domain, where the Deos utilities are reimplemented. Being aware of when BBPSim is in control of the execution was especially important in the design of the save \& restore, because requirement U02 prevented the modification of DAS code. Thus, the design of the feature had to bend to this constraint.
+The characterization of DAS threads code was important in the context of this thesis, because, on one hand, it demonstrated the basic interaction of the flight software with its simulation environment. On the other hand, it also revealed at which point, in a given task routine, the execution moves from the flight software domain to the BBPSim domain, where the Deos utilities were reimplemented. Being aware of when BBPSim was in control of the execution was especially important in the design of the save and restore, because requirement U02 prevented the modification of DAS code. Thus, the design of the feature had to bend to this constraint.
 }
