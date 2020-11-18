@@ -15,7 +15,7 @@ While in a simulation, when it is in standby between two step commands, a flight
 	\item \textbf{Dead}. The thread was terminated at the last step, either by itself or another running thread.
 \end{itemize}
 
-Three different strategies were attempted to solve the execution restoring problem. One can take \autoref{code:example-task} on page \pageref{code:example-task} as an example of a flight task loop to follow through.
+Three different strategies were attempted to solve the execution restoring problem. One can take \autoref{code:example-task} as an example of a flight task loop to follow through.
 \begin{enumerate}
 	\item \textbf{Restart back fresh and mature threads from scratch}. This had obvious problems.  Cold-starting all the threads alive when restoring would mean the task preamble (everything \textit{before} the infinite loop) would get executed twice: once at the first simulation and a second time when restoring. Since embedded utilities like mutexes also got restored, the flight software would try to re-create them when restoring. This would inevitably create runtime errors.
 	
@@ -190,7 +190,7 @@ Of course, using such a technique brought its lot of drawbacks. Since the old st
 \begin{enumerate}
 	\item The address of static DAS variables was always the same, so those pointers would point to a valid address.
 	\item Dynamic memory allocation wasn't used, so addresses were deterministic. BBPSim objects, though, were allocated dynamically, and some BBPSim-defined Deos types had to be modified to address the issue. This subject is treated in \autoref{cha:bbpsim-impl}. 
-	\item The amount of old stack frames to copy back was low. This is because calls to \texttt{waitUntilNextPeriod()}, which checkpointed the flight software, were nearly always located in the task loop (i.e. when in the first user stack frame). This characteristic mitigated problems related to using the address of a function-local variable as a pointer parameter to another function, which would have been invalidated by the restoring process. 
+	\item The amount of old stack frames to copy back was low. This is because end-of-task-loop calls to \texttt{waitUntilNextPeriod()}, which checkpointed the flight software, were nearly always located in the task loop (i.e. when in the first user stack frame). This characteristic mitigated problems related to using the address of a function-local variable as a pointer parameter to another function, which would have been invalidated by the restoring process. 
 \end{enumerate}
 
 This process was also limited in the fact that the \texttt{-fomit-frame-pointer} GCC option unconditionally needed to be enabled. As the x86 architecture states, the frame pointer of the caller is usually pushed on the stack when calling a function\cite{online:x86-abi}. This means that the stack usually contains data that points inside \textit{itself}. As thread stacks were dynamically allocated, and thus were never located at the same place in memory, frame pointers were a big problem. Adding the GCC option when compiling every C and \Cpp file completely removed that limitation by taking out the reliance on the frame pointer entirely. It results in slight modifications to the compiled program, which changes the access to stack-allocated variables to be based on an offset from the \textit{stack pointer} rather than the frame pointer\cite{online:omit-frame-pointer}.

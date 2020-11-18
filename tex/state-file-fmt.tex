@@ -4,16 +4,21 @@
 Before turning to the actual implementation of the save and restore feature, multiple choices of state representation needed to be considered. Whether one or more artifacts are produced for a checkpoint usually comes as a consequence of the approach that was taken in the design itself. However, in the context of this thesis, it was decided to start from the checkpoint artifact, and then to build outwards. Hence, the save and restore feature was developed around that central idea.
 
 \section{Design Constraints}\label{sec:file-constraints}
+Here are the constraints that guided the design.
+
+\subsection*{1. Artifact number}
 In sections \ref{sec:virtualbox} through \ref{sec:c3}, it was shown that the artifacts produced by checkpointing an application can take many forms. For instance, Checkpoint and Restore in User space outputs a series of files that each serve a different area of the restore, whereas VirtualBox produces one large file in a format defined as part of the open-source program. In the context of the BBP simulator, requirements DCMS-BBP-122 (see \autoref{tab:customer-reqs}) and U03 (see \autoref{tab:user-reqs}) forced the saving of a simulation to only output one file.
 
-In addition, it was also important to take into consideration the amount of data that needed to be saved, as well as its nature. A preliminary investigation showed that the majority of the data was produced by the static variables inside the flight software (see \autoref{cha:das-impl}). It was also shown that the amount of data was of the order of 100MB. Since the weight of other software modules was considered negligible in comparison, this implied that majority of the data contained within the state file was binary in nature.
+\subsection*{2. Contents}
+In addition, it was also important to take into consideration the amount of data that needed to be saved, as well as its nature. A preliminary investigation showed that the majority of the data came from the static variables inside the flight software, which is binary (see \autoref{cha:das-impl}). It was mentioned that its size was of the order of 100MB. Since the weight of other software modules was considered negligible in comparison, this implied that majority of the data contained within the state file was binary in nature.
 
+\subsection*{3. Identification}
 It was also considered essential to be able to identify a checkpointing artifact from its content, not only by its name on the file system. Since the artifacts might be transferred frequently from one computer to another, especially inside a continuous integration system, forcing a naming convention on the file was not desirable.
 
 Finally, even though a requirement concerning the number of artifacts was imposed, it didn't mention the usage of one format over another. For this reason, different alternatives were taken into consideration. 
 
 \section{State File Extension}
-Since a lot of data had to be saved in the course of a simulation checkpoint, an appropriate file extension had to be determined. In the context of the save and restore feature design, it was important to evaluate the various format options. First of all, multiple potential candidates were researched. Then, each format was evaluated based on its general qualifiers and how well it performed in certain areas critical to the design, always bearing the constraints of \autoref{sec:file-constraints} in mind. To justify the decision quantitatively, a weighted rating in percent was performed. The assessment is shown in \autoref{tab:file-fmts}. It should be noted that some criteria have a non-negligible subjective aspect.
+Since a lot of data had to be saved in the course of a simulation checkpoint, an appropriate file extension had to be determined. In the context of the save and restore feature design, evaluating the various format options had to be done. First of all, multiple potential candidates were researched. Then, each format was evaluated based on its general qualifiers and how well it performed in certain areas critical to the design, always bearing the constraints of \autoref{sec:file-constraints} in mind. To justify the decision quantitatively, a weighted rating in percent was performed. The assessment is shown in \autoref{tab:file-fmts}. It should be noted that some criteria have a non-negligible subjective aspect.
 
 \begin{table}[htbp]
 	\vspace{12pt}
@@ -78,7 +83,7 @@ There are multiple ways of organizing data inside a binary file. The final arran
 		\midrule
 		Payload & {X byte(s)} & Raw bytes of data to save. Because of the Tag, this data can be correctly parsed, cast or loaded by the relevant simulation modules.\\
 		\midrule
-		CRC16 & 2 bytes & Calculation of the CRC16 error-detecting code on the payload section. This algorithm detects accidental corruption of raw data blocks.\\
+		CRC16 & 2 bytes & Calculation of the CRC16 error-detecting code on the payload section. This algorithm detects accidental corruption of raw data blocks when restoring.\\
 		\bottomrule	
 	\end{tabularx}
 	\caption{Definition of the different sections that compose a record block.}
@@ -102,7 +107,7 @@ Once the RB package format was defined, it was possible to design the general la
 \end{figure}
 
 As shown in \autoref{fig:file-layout}, it was decided to prepend a file header to the sequence of record blocks. This was made with the intention of satisfying the constraint of file self-identification mentioned in \autoref{sec:file-constraints}. The information deemed necessary for identification of the checkpointing artifact was included in the header, described in \autoref{tab:header-fields}.
-\begin{table}[h]
+\begin{table}[H]
 	\vspace{12pt}
 	\centering
 	\ra{1.3}
@@ -129,5 +134,5 @@ As shown in \autoref{fig:file-layout}, it was decided to prepend a file header t
 	\label{tab:header-fields}
 \end{table}
 
-Since the save and restore could happen a long period of time apart, the BBPSim and flight software versions were necessary to identify whether a past checkpoint artifact was compatible with the current version. The timestamp and step counts were added for convenience. As for the addition of the load address of the BBPSim library, a detailed explanation is given in \autoref{cha:das-impl}. At the end of the header, some bytes were also reserved in order to keep the possibility of adding new fields without invalidating checkpointing artifacts produced in a previous version of BBPSim.
+Since the save and restore could happen a long period of time apart, the BBPSim and flight software versions were necessary to identify whether a past checkpoint artifact was compatible with the current version. The timestamp and step counts were added for convenience. As for the addition of the load address of the BBPSim library, an explanation is given on page \pageref{subsec:shared-obj-considerations}. At the end of the header, some bytes were also reserved in order to keep the possibility of adding new fields without invalidating checkpointing artifacts produced in a previous version of BBPSim.
 }

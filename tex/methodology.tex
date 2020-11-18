@@ -7,7 +7,7 @@ Like any other project of its size, planning played an important part in this wo
 First, the context had to be described, so that a methodology could be devised, both in the team development environment and the personal, more technical part.
 
 \subsection*{Project Management}
-The Dream Chaser team was composed mainly of four teams handling different aspects of the \gls{BBP}. There were two software and one FPGA teams, all of them overseen by the project management team. Most of the work as part of this thesis was done under one of the software teams, counting 10 members. And like many software teams choose to operate, the preferred development method was \textbf{Scrum}. 
+The Dream Chaser team was composed of multiple teams handling different aspects of the \gls{BBP}. There were two software and one hardware teams, all of them overseen by the project management team. Most of the work as part of this thesis was done under one of the software teams, counting 10 members. And like many software teams choose to operate, the preferred development method was \textbf{Scrum}. 
 
 Scrum is a very popular agile framework for all types of technical projects all around the world. It allows for a structured, well-defined development and delivery process for relatively small teams part of a complex product \cite{book:scrum}. The main goal of Scrum's usage in the Dream Chaser team was to effectively address its complex engineering problems while creating value for the product (the BBP and its embedded software) and adapting swiftly to unforeseen events during the project. A summary the important concepts of the development process is pictured in \autoref{fig:scrum-process}.
 
@@ -20,14 +20,14 @@ Following the framework's principles, the work of the software team was guided i
 	\label{fig:scrum-process}
 \end{figure}
 
-On top of these organization efforts, the team held 15-minutes meetings everyday, during which each member told the others what they had worked on in the past hours, raised up possible present or future blockers and mentioned the content of their pending work. These "dailies" allowed the team to stay productive, while quickly addressing any arising technical or organizational issues.
+On top of these organization efforts, the team held 15-minutes meetings everyday, during which each member told the others what they had worked on in the past hours, raised up possible present or future blockers and mentioned the content of their pending work. These daily meetings allowed the team to stay productive, while quickly addressing any arising technical or organizational issues.
 
 \subsection*{Integration of the Thesis Work in Scrum}
 Of course, it was very important for this work to fit in the team's development scheme. After all, any project of comparable size needs a work structure and the fact that the team already had a well-working one meant it was an opportunity to adapt the academic project to a working-environment structure. Thus, this avenue was taken from the beginning of the thesis-internship.
 
-Modifying the working method to make it \textit{scrum-able} turned out to have important benefits. For instance, rather than touching base only once in a while during the implementation phase, an update on the progress of the feature had to be given daily to the team. This way, they was able to get daily feedback on the progress of the save \& restore and could quickly provide support if needed. Such a situation happened on many occasions and a lot of time was saved by other members helping with rather technical questions or with finding relevant documentation. 
+Modifying the working method to make it \textit{scrum-able} turned out to have important benefits. For instance, rather than touching base only once in a while during the implementation phase, an update on the progress of the feature had to be given daily to the team. This way, they were able to get daily feedback on the progress of the save \& restore and could quickly provide support if needed. Such a situation happened on many occasions and a lot of time was saved by other members helping with rather technical questions or with finding relevant documentation. 
 
-The dailies also brought the thesis subject "closer" to the team. Since the feature was linked to a customer requirement, it was critical for the team leader to have good insights on the overall progression and the predicted release date. A backlog of remaining stories linked to the feature had to be maintained for the team leader to be constantly up-to-date on the progression. Undoubtedly, knowing what to expect in the short and long term is always a big benefit for any project's organization. 
+The daily meetings also brought the thesis subject "closer" to the team. Since the feature was linked to a customer requirement, it was critical for the team leader to have good insights on the overall progression and the predicted release date. A backlog of remaining stories linked to the feature had to be maintained for the team leader to be constantly up-to-date on the progression. Undoubtedly, knowing what to expect in the short and long term is always a big benefit for any project's organization. 
 
 On top of everything, merging the thesis into the Scrum framework also allowed for a much better social integration and better working experience as a whole. 
 
@@ -37,7 +37,7 @@ In any case, such a binary feature should never be entirely programmed without i
 
 This is why the thesis was broken down into phases, where each phase was considered done when it hit a certain milestone at the end. The milestones were chosen so that a save and a restore operation could be successfully done on one component or group of components in the simulator. In addition, in order to adapt the development of the feature to the Scrum framework, each phase was further divided into Scrum stories. That way, it was possible to estimate the time of completion of a certain milestone, since all stories in Scrum are subject to a time estimation before getting assigned. \autoref{tbl:project-phases} better shows how the thesis was divided. Since \gls{BBPSim} was a software with clearly defined layers, it was decided to fit the phases onto them.
 
-This particular division was chosen, because most of the milestones also made the holding of demonstrations to stakeholders possible. Since this feature was part of a release of the simulator, \autoref{sec:feedback} further explains how the interaction with interested parties was handled.
+This particular division of tasks was chosen, because most of the milestones also made the holding of demonstrations to stakeholders possible. Since this feature was part of a release of the simulator, \autoref{sec:feedback} further explains how the interaction with interested parties was handled.
 
 \begin{table}[htbp]
 	\centering

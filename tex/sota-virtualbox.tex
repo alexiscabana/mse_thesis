@@ -11,32 +11,28 @@ Indeed, VirtualBox acts as a mediator between a guest OS (the \textit{virtualize
 	\includesvg[width=0.37\textwidth]{svg/hypervisor}
 	\caption{Abstraction layers for a type-2 hypervisor.}
 	\label{fig:layerhyper}
-	\vspace{-24pt}
+	\vspace{-12pt}
 \end{wrapfigure}
 Since VirtualBox is an open-source project, anyone can have access to its source code. Consequently, it's possible to take a look at the different strategies that were taken to solve certain problems. In this case, how VirtualBox handles the saving of guest OS processes and memory is of particular interest.
 
-Inside the code repository, the \pathmono{SnapshotImpl.cpp} file contains the relevant \Cpp classes and routines that provide the starting point for this analysis. Specifically, the \cppsym{SessionMachine::i_takeSnapshotHandler} can be recognized as the method responsible for the snapshot feature. The feature does many things, but four snapshot aspects stand out by how they approached their design to make the saving problem possible.
+The \pathmono{SnapshotImpl.cpp} file in the code repository contains the relevant \Cpp classes and routines that provide the starting point for this analysis. Specifically, the \cppsym{SessionMachine::i_takeSnapshotHandler} can be recognized as the method responsible for the snapshot feature. The feature does many things, but four snapshot aspects stand out by how they approached their design to make the saving problem possible.
 
 \subsection*{Snapshotting process}
 
-VirtualBox needs an efficient strategy to save the general state of the virtual machine. Precisely, it is VBox's Saved State Manager's (SSM) responsibility to implement the facilities for saving and restoring a VM state in a structural manner.
-
-During initialization of a given virtual machine (i.e right before the guest OS starts its boot sequence), the SSM registers the different virtual components that are available to the virtualized operating system. When time comes for the user to hit the \inlinegraphics{art/take-snap.png} button while the VM is running, the Saved State Manager goes through its list of registered components. The components then save their internal state themselves using the API the SSM provides, and the SSM takes care of encoding the data. As a result, what is called a "stream" in the project is produced from the agglomeration of the saved data. This is a powerful way of dealing with this problem and has many advantages :
+VirtualBox needs an efficient strategy to save the general state of the virtual machine. Precisely, it is VBox's Saved State Manager's (SSM) responsibility to implement the facilities for saving and restoring a VM state in a structural manner. During initialization of a given virtual machine (i.e right before the guest OS starts its boot sequence), the SSM registers the different virtual components that are available to the virtualized operating system. When time comes for the user to hit the \inlinegraphics{art/take-snap.png} button while the VM is running, the Saved State Manager goes through its list of registered components. The components then save their internal state themselves using the API the SSM provides, and the SSM takes care of encoding the data. As a result, what is called a "stream" in the project is produced from the agglomeration of the saved data. This is a powerful way of dealing with this problem and has many advantages :
 \begin{enumerate}
 	\item Encapsulation is kept since each component takes care of saving itself. This is good for software maintenance.
 	\item Adding a new component to include in a save only requires it to register itself at initialization. The SSM doesn't need to be aware of the capabilities said component provides.
 	\item The time to save a machine's state grows linearly with the number of components, since they are completely decoupled from each other.
 \end{enumerate}
-
 \hfill\textit{Relevant file }: \pathmono{src/VBox/VMM/VMMR3/SSM.cpp}.
 
 \subsection*{Non-volatile Memory Snapshot}
-
 From a hard disk point of view, the hypervisor takes a \textit{diff}-based approach. This means that from the time a snapshot is created, VirtualBox associates it with a list $L$ of changes in which all $n$  subsequent hard disk write operations $w$ are added. When the user wants to come back to a certain snapshot taken at time $t_0$, the \gls{VMM} then takes the current state of the disk ($\text{HDD}_{tn}$) and traverses $L$ in the reverse order while applying the inverse operation.
 \[
 \text{HDD}_{t0} = \text{HDD}_{tn} + \sum_{i=n}^{0}w_i^{-1}
 \]
-This effectively undos all previous operations. Using this technique means that \ul{VirtualBox snapshots are dynamic objects} that grow linearly with the subsequent usage of their affiliated VM.
+This effectively undos all previous operations. Using this technique means that VirtualBox snapshots are dynamic objects that grow linearly with the subsequent usage of their affiliated VM.
 
 \hfill\textit{Relevant file }: \pathmono{src/VBox/VMM/VMMR3/SSM.cpp}.
 

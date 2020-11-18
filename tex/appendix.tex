@@ -18,7 +18,8 @@ int anotherVariable = 0;
 static const double pi = 3.1415;
 
 /* statically-allocated variables       	*/
-/* They all go in the .bss section 			*/
+/* They all go in the .data section, since	*/
+/* they are initialized						*/
 int anInitedVar = 42;
 static int anotherInitedVar = 42;//$\label{lc-end-statics}$
 

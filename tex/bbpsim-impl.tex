@@ -8,7 +8,7 @@ In this chapter, the design and implementation of the checkpointing strategy of 
 \section{Layer Analysis}
 Saving the layers of the environment first requires one to broadly understand how BBPSim was designed in order to produce a quality solution tailored for its needs. In \autoref{sec:fsw-outline}, it was seen that, to offer a good ecosystem for the flight software's testing, \gls{BBPSim} reimplemented embedded operating system functionalities that were only available on the Deos \gls{RTOS}. Since the simulation framework was developed to run solely on the Linux platform, these functionalities had to be translated to use only available constructs. In parallel, the FSW also used the components present on the custom hardware designed for the Dream Chaser Communication Subsystem (called the \gls{BBP}). This required the simulator to emulate those behaviors as well.
 
-In practice, every software or hardware utility that was mimicked was encapsulated in a child class of \texttt{CSimModule}. In BBPSim, a simulation module was represented as being an entity that can be initialized, processed (at every step of 20ms) and resetted. \autoref{fig:os-layer} and \autoref{fig:hw-layer} present a brief summary of the general inheritance model of the modules. 
+In practice, every software or hardware utility that was mimicked was encapsulated in a child class of \texttt{CSimModule}. In BBPSim, a simulation module was represented as being an entity that can be initialized, processed at every step and resetted. \autoref{fig:os-layer} and \autoref{fig:hw-layer} present a brief summary of the general inheritance model of the modules. 
 \begin{figure}[htbp]
 	\vspace{12pt}
 	\centering
@@ -58,8 +58,8 @@ From that point, a standard interface for saving and restoring was defined. When
 Once the iteration process was defined, the \texttt{CEnvironmentSaver} class needed to fulfill the needs of the different simulation modules. The UML diagram of the class is given in \autoref{fig:env-saver} It was mentioned previously that the object was defined as being a building object. In the case of the checkpointing of the OS and HW layers, two different types of payload to be contained in a record block were defined: static and dynamic. 
 
 \begin{figure}[htbp]
-	\centering
 	\vspace{12pt}
+	\centering
 	\footnotesize
 	\includesvg[width=.75\linewidth]{svg/env-saver}
 	\caption{UML class diagram of the CEnvironmentSaver interface.}
@@ -76,8 +76,8 @@ While the simulation modules were iterated over, all record blocks were built an
 At restore time, a similar but reverse implementation was designed. This is reflected in the \texttt{CEnvironmentRestorer} class. When initializing a simulation, a \texttt{CEnvironmentRestorer} instance started by reading the header of the checkpointing artifact. This is where the current \pathmono{libBbpSim.so} loading address was validated, to make sure it was loaded at the same address as when the checkpointing artifact was produced. The restorer then read the record blocks, validated their CRC, and iterated through the simulation modules, which had to implement their own restoring sequence.
 
 \begin{figure}[htbp]
-	\centering
 	\vspace{12pt}
+	\centering
 	\footnotesize
 	\includesvg[width=.75\linewidth]{svg/env-restorer}
 	\caption{UML class diagram of the CEnvironmentRestorer interface.}
@@ -108,7 +108,7 @@ The process that was applied to every member variables/component of every module
 
 By following this plan for every components, one could extract a description of the items saved by some important OS modules, like the one given in  \autoref{tab:sim-mods-save}. 
 
-\begin{table}[htbp]
+\begin{table}[H]
 	\centering
 	\ra{1.2}
 	\begin{tabularx}{\linewidth}{l X}
@@ -165,7 +165,7 @@ Finally, the content of the Shared Memory was considered very important to inclu
 \section{Save \& Restore Performance}
 In \autoref{sec:reqs}, it was mentioned that the save and restore feature was guided by many customer requirements. Some of these requirements concerned the general performance of BBPSim, which directly affected the implementation of the feature. Particularly, requirements DCMS-BBP-56 and DCMS-BBP-69 (see \autoref{tab:customer-reqs}) were the main reason for the entire feature's performance goals.
 
-\autoref{cha:das-impl} mentioned that the restoring of DAS threads was very fast. By using the \texttt{/usr/bin/time} Linux profiling tool, it was possible to quantify that metric at  850ms to 1 second on average, well below the 5 min imposed by DCMS-BBP-56. As for the memory usage of the BBPSim simulator, results using the same profiling tool for RAM indicated a maximum memory usage of a little bit more than 261MB when restoring, which also fulfilled requirement DCMS-BBP-69. The output can be seen in \autoref{app:ram-profiling}. 
+Chapter \ref{cha:das-impl} mentioned that the restoring of DAS threads was very fast. By using the \texttt{/usr/bin/time} Linux profiling tool, it was possible to quantify that metric at  850ms to 1 second on average, well below the 5 min imposed by DCMS-BBP-56. As for the memory usage of the BBPSim simulator, results using the same profiling tool for RAM indicated a maximum memory usage of a little bit more than 261MB when restoring, which also fulfilled requirement DCMS-BBP-69. The output can be seen in \autoref{app:ram-profiling}. 
 
 A lot of the memory usage could be attributed to the handling of statically-allocated flight software variables, located in the \texttt{.bss} and \texttt{.data} sections. In \autoref{sec:das-mem-restore}, it was seen that these sections took up about 100MB of space in RAM. However, the RAM usage in \autoref{app:ram-profiling} showed a usage of more than two and a half times that amount. This was attributed to the fact that, at restore time, the checkpointing artifact got loaded, read and \textit{copied} into memory by the \texttt{CEnvironmentRestorer} before it iterated through all simulation modules. This meant that, during the restoring process, space was allocated for both the big record blocks and the real statically-allocated DAS variables at the same time. 
 

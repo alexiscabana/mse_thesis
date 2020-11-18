@@ -59,7 +59,7 @@ criu restore -D <outdir>
 \subsection*{Non-volatile Memory Snapshot}
 Because Checkpoint and Restore in User Space doesn't operate as an entire layer directly under the program to checkpoint, and because the changes in the Linux file system are persistent from one program run to another, there is no need for CRIU to save all the operations made on disk like VirtualBox. 
 
-There is however an edge case when the program is saved while it possesses a handle to an opened file. In Linux, because every file operation is done through system calls, the interception layer is able to catch the relevant file's path. At restore, CRIU reopens the same files or, if the files aren't there anymore, invalidates the handle variables (in C: \mintinline[]{c}|FILE* fd;|). 
+There is however an edge case when the program is saved while it possesses a handle to an opened file. In Linux, because every file operation is done through system calls, the interception layer is able to catch the relevant file's path. At restore, CRIU reopens the same files or, if the files aren't there anymore, it invalidates the handle variables (in C: \mintinline[]{c}|FILE* fd;|). In this case, trying to read using the handle(s) would result in an error and no bytes would be read.
 
 \hfill\textit{Relevant file }: \pathmono{criu/fdstore.c}.
 
@@ -75,7 +75,7 @@ Since CRIU is registered as a tracer, it is possible for it to gather the regist
 \begin{minted}{c}
 ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &regs);
 \end{minted}
-The registers CRIU then gets depends on the architecture of the computer. Nevertheless, this call requires the traced thread to be stopped in order to succeed.
+The registers CRIU then gets in return depends on the architecture of the computer. Nevertheless, this call requires the traced thread to be stopped in order to succeed.
 
 \hfill\textit{Relevant file (x86-64)}: \pathmono{criu/compel/arch/aarch64/src/lib/infect.c}.
 
@@ -84,7 +84,7 @@ From CRIU's perspective, memory inside the \gls{VMA} of the traced process is ha
 \begin{minted}{bash}
 pmap -x <pid>
 \end{minted}
-The command lists the address and size of the different allocated sections inside the tracee's \gls{VMA} range. In addition, the utility gives the "dirtyness"  (whether the section has once been written to), the permissions and even the mapping (if the section is code, stack, shared object, etc.) each section is associated with. The usage of \mintinline[]{bash}|pmap| doesn't require elevated privileges. However, since a read-write access to the content of the memory pages from other applications is forbidden for security reasons, CRIU is required to "be present" inside the checkpointee's virtual memory address range. This is the reason why \pathmono{libcriu.so} has to be linked in the compilation phase and loaded at runtime. 
+The command lists the address and size of the different allocated sections inside the tracee's \gls{VMA} range. In addition, the utility gives the "dirtiness"  (whether the section has once been written to), the permissions and even the mapping (if the section is code, stack, shared object, etc.) each section is associated with. The usage of \mintinline[]{bash}|pmap| doesn't require elevated privileges. However, since a read-write access to the content of the memory pages from other applications is forbidden for security reasons, CRIU is required to "be present" inside the checkpointee's virtual memory address range. This is the reason why \pathmono{libcriu.so} has to be linked in the compilation phase and loaded at runtime. 
 
 When executing a "dump" operation, CRIU fetches the list of memory pages part of the checkpointee's VMA range and saves them one by one. 
 
