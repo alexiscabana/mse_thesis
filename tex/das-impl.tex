@@ -5,17 +5,17 @@ At its core, offering a suitable environment for the simulation of the flight so
 
 The fact that DAS was supposed to stay completely permeable to modification forced the implementation of the save \& restore feature to treat it as a black box. This point of view brought several challenges, which were not present when modifying the BBPSim code to support checkpointing. 
 
-In this section, the constraints that influenced the development of a checkpointing technique within the flight software are first of all described. It should be noted that most of the solutions to the problems were based on technical details that, in the end, had a meaningful impact. Subsequently, \gls{DAS} is briefly analyzed to clearly define which of its components' checkpointing are considered a necessary condition for a stable restore. Then, the approach taken to indirectly access, save and restore them is explained in details.
+In this section, the constraints that influenced the development of a checkpointing technique within the flight software are first of all described. It should be noted that most of the solutions to the problems were based on technical details that, in the end, had a meaningful impact. Subsequently, \gls{DAS} is briefly analyzed to clearly define which of its components checkpointing was considered a necessary condition for a stable restore. Then, the approach taken to indirectly access, save and restore them is explained in details.
 
 \section{Design Constraints}
 It goes without saying that user and customer requirements played a big role in how the design went forward. In particular, to make the \gls{FSW} checkpointable, it was important to bear in mind DCMS-BBP-121 (64-bit application), U02 (no alteration to FSW) and U01 (no instability). However, some other technicalities had a big importance too. They are further detailed in this chapter.
 
 Also, since the delivery method of BBPSim was through a Linux dynamic library, it was realized that most of the container-based solutions presented in \autoref{cha:state-of-the-art} could not apply to BBPSim. A shared object does not possess the same control as an application over many things, like memory layout. This was a problem, and a better explanation of the issue is given in the coming sections.
 
-Finally, because the build process of the dynamic library happened inside a Linux machine, the tools used to execute the checkpointing had to be standard Linux programs installed on any distribution. This constraint came from the fact that developers on the Dream Chaser team used a Linux virtual machine to run a simulation. Hence, adding in the dependency on another program would imply changing all of the Linux VMs images on the team. This was of not desirable.
+Finally, because the build process of the dynamic library happened inside a Linux machine, the tools used to execute the checkpointing had to be standard Linux programs installed on any distribution. This constraint came from the fact that developers on the Dream Chaser team used a Linux virtual machine to run simulations. Hence, adding the dependency on another program would imply changing all of the Linux VMs images on the team. This was of not desirable.
 
 \section{Definition of Sufficient Condition for Restoration}\label{sec:conditions}
-Saving and restoring an application was the main subject of \autoref{cha:state-of-the-art}. In every existing solution that was presented, the checkpointer programs did not have any control over the building process of the checkpointee. This made them approach the checkpointing problem from various angles, depending on the level at which the program was supposed to interact with the checkpointed application. 
+Saving and restoring an application was the main subject of \autoref{cha:state-of-the-art}. In most of the existing solutions that were presented, the checkpointer programs did not have any control over the building process of the checkpointee. This made them approach the checkpointing problem from various angles, depending on the level at which the program was supposed to interact with the checkpointed application. 
 
 In parallel, they each introduced a different sufficient condition, in terms of what to save, to be able to restore back the checkpointee. For example, it was considered essential for CRIU to save the totality of active memory pages inside the application's \gls{VMA} range, something pointless using the C\textsuperscript{3} environment.
 
@@ -35,27 +35,27 @@ In this context, there are four relevant memory segments inside an object file:
 	\vspace{-24pt}
 \end{wrapfigure}
 \begin{enumerate}
-	\item \textbf{\texttt{.bss}}. Contains the statically-allocated variables that were either uninitialized or initialized to zero.
-	\item \textbf{\texttt{.data}}. Contains the statically-allocated variables that were initialized to zero.
+	\item \textbf{\texttt{.bss}}. Contains the statically-allocated variables that were either left uninitialized or initialized to zero (in the source code).
+	\item \textbf{\texttt{.data}}. Contains the statically-allocated variables that were initialized.
 	\item \textbf{\texttt{.text}}. Contains the binary instructions. Basically, the executable code.
 	\item \textbf{\texttt{.rodata}}. Contains the read-only data (constants).
 \end{enumerate}
 \autoref{code:c-to-segments} shows how the translation is done using real C code.
 
-In this thesis, it is argued that the state, or "model" of the flight software could be defined by two main components: the memory segments of statically-allocated variables, and the program counters. In the context of an object file, it was possible to redefine the state of a multithreaded DAS as being:
+In this thesis, it is argued that the state, or "model" of the flight software could be defined by two main components: the memory segments of statically-allocated variables, and execution information. Taken in the context of an object file, the state of a multithreaded DAS can be explained as being:
 \begin{shadedquotation}
-The full contents of the \texttt{.bss} and \texttt{.data} segments for all object files, the register set of each threads and the stack of each threads. 
+The full contents of the \texttt{.bss} and \texttt{.data} segments for all FSW object files, the register set of each threads and the stack of each threads. 
 \end{shadedquotation}
 
-As for the \texttt{.rodata} and other segments, since they contain values that do not change from one simulation to the other, they were deemed unnecessary to include in this definition. Since they were identical at every simulation run, they were not included in the definition of the FSW state.
+As for the \texttt{.rodata} and other segments, since they contain values that do not change from one simulation to the other, they were deemed unnecessary to include in this definition. The segments were identical at every simulation run, so it was superfluous to include them in the definition of the FSW state.
 
 \subsection*{Condition 1 - Memory Segments}
 The first necessary condition to be able to restore back to a previous "model" of DAS was to save the read-writeable, \textit{statically-allocated} regions in memory that concerned the flight software. It should be understood that a program's statically-allocated variables are variables that exist for the entire duration of the program. This term should not be confused with the \mintinline{c}|static| keyword of the C language, which limits the scope of a symbol in a compilation unit.
 
-One can make an informal proof by contradiction of that statement by looking again at the sample code in \autoref{code:c-to-segments}. Let's suppose that, to restore DAS to a consistent global state, the restoration of the statically-allocated memory segments is not necessary. As a user, any changes done to variables (declared on lines \ref{lc-beg-statics} to \ref{lc-end-statics}) during a simulation will be lost, and therefore, the global state of the application would not be consistent with the one on the previous run. Variables on the second run would not read the same as they would have at the end of the first one. The inclusion of these segments is thus a necessary condition.
+One can make an informal proof by contradiction of that statement by looking again at the sample code in \autoref{code:c-to-segments}. Let's suppose that, to restore DAS to a consistent global state, the restoration of the statically-allocated memory segments was not necessary. As a user, any changes done to variables (declared on lines \ref{lc-beg-statics} to \ref{lc-end-statics}) during a simulation would be lost, and therefore, the global state of the application would not be consistent with the one on the previous run. Variables on the second run would not read the same as they would have at the end of the first one. The inclusion of these segments is thus a necessary condition.
 
 \subsection*{Condition 2 - Register Sets}
-A second necessary condition for a consistent DAS global state restore was to save the register set of every thread attached to the DAS program. In this set is located the \gls{PC}, depicted in \autoref{fig:x86-regs}. It is the CPU register in charge of keeping track of which instructions are to be executed. Since CPU instructions are encoded in binary and reside in the same \gls{VMA} as the variables, they are also addressable. In that sense, the program counter register holds the address of the current instruction being executed by the processor. One can think of the PC as being "where" the thread is in its execution of the program.
+A second necessary condition for a consistent DAS global state restore was to save the register set of every thread attached to the DAS program. The \gls{PC} is located in this set, depicted in \autoref{fig:x86-regs}. It is the CPU register in charge of keeping track of which instructions are to be executed. Since CPU instructions are encoded in binary and reside in the same \gls{VMA} as the variables, they are also addressable. In that sense, the program counter register holds the address of the current instruction being executed by the processor. One can think of the PC as being "where" the thread is in its execution of the program.
 
 In addition, it was also important to save the other general-purpose registers, which contained the context of the CPU at that particular moment. Not putting the correct value in the registers would produce a domino effect resulting in a segmentation fault at best, or undefined behavior at worst.
 
@@ -69,13 +69,13 @@ When the three conditions listed above were grouped together, it was defined tha
 \begin{itemize}
 	\item with $F$ being a C function in DAS;
 	\item with $S_g$ being the global state of DAS memory in a first BBPSim run;
-	\item with $S_s$ being the saved state being restored in a second BBPSim run, defined as a subset of the global state in the first run ($S_s \subsetneq S_g$);
+	\item with $S_s$ being the saved state restored in a second BBPSim run, defined as a subset of the global state in the first run ($S_s \subsetneq S_g$);
 \end{itemize}
 then
 \begin{equation} \label{eq:sr_equiv}
 	\forall F: F(S_s)\equiv F(S_g)
 \end{equation}
-when $F$ is void of non-deterministic processes. All DAS functions satisfied to this criteria, because they were strictly exempt of dynamic memory allocation, random numbers, and scheduling non-determinism (since the order of execution for threads was set at compile-time). An implication of the equivalence in \autoref{eq:sr_equiv} was that it was possible to observe the same behavior and output from a function in the simulated flight software if the required parts of memory were saved and copied back on the second run. It was not necessary to the save the whole contents of RAM ($S_g$).
+when $F$ is void of non-deterministic processes. All DAS functions satisfied to this criteria, because they were strictly exempt of dynamic memory allocation, random numbers, and scheduling non-determinism (since the order of execution for threads was set at compile-time). An implication of the equivalence in \autoref{eq:sr_equiv} was that it was possible to observe the same behavior and output from a function in the simulated flight software if the required parts of memory were saved and copied back on the second run. It was not necessary to the save the whole contents of RAM ($S_g$), only a portion of it was necessary ($S_s$).
 
 It should be noted that \autoref{eq:sr_equiv} also holds true whether $F$ is \textit{stateful} or stateless (i.e whether calling $F$ with the same parameters yields the same output or not). This is because even function-scoped static variables are included in the memory segments that are part of $S_r$. \autoref{code:c-to-segments} contains a good example of this. The \texttt{count()} function is stateful, but its state (i.e the value of \mintinline{c}|theCount|) is also included in the definition of the flight software state (in the \texttt{.bss} section).
 

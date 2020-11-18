@@ -35,9 +35,9 @@ On top of everything, merging the thesis into the Scrum framework also allowed f
 The save \& restore function in \gls{BBPSim} is a boolean feature: either it works and the simulator can consistently restart itself back to a previous state, or it doesn't. Like any other program, \gls{BBPSim} needs all of its components to function correctly. Therefore, partial saves of a simulation would lead to stability issues when restoring. 
 In any case, such a binary feature should never be entirely programmed without incremental testing, because reverting back the strategy in the event of a failure would be too time-consuming.
 
-This is why the thesis was broken down into phases, where each phase was considered done when it hit a certain milestone at the end. The milestones were chosen so that a save \& restore could be successfully done on one component or group of components in the simulator. In addition, in order to adapt the development of the feature to the Scrum framework, each phase was further divided into Scrum stories. That way, it was possible to estimate the time of completion of a certain milestone, since all stories in Scrum are subject to a time estimation before getting assigned. \autoref{tbl:project-phases} better shows how the thesis was divided. Since \gls{BBPSim} is a software with clkearly defined layers, it was decided to fit the phases onto them.
+This is why the thesis was broken down into phases, where each phase was considered done when it hit a certain milestone at the end. The milestones were chosen so that a save and a restore operation could be successfully done on one component or group of components in the simulator. In addition, in order to adapt the development of the feature to the Scrum framework, each phase was further divided into Scrum stories. That way, it was possible to estimate the time of completion of a certain milestone, since all stories in Scrum are subject to a time estimation before getting assigned. \autoref{tbl:project-phases} better shows how the thesis was divided. Since \gls{BBPSim} was a software with clearly defined layers, it was decided to fit the phases onto them.
 
-This particular division was chosen, because most of the milestones also made possible the holding of demonstrations to stakeholders. Since this feature was part of a release of the simulator, \autoref{sec:feedback} further explains how the interaction with interested parties was handled.
+This particular division was chosen, because most of the milestones also made the holding of demonstrations to stakeholders possible. Since this feature was part of a release of the simulator, \autoref{sec:feedback} further explains how the interaction with interested parties was handled.
 
 \begin{table}[htbp]
 	\centering
@@ -68,7 +68,7 @@ This particular division was chosen, because most of the milestones also made po
 \end{table}
 
 \section{Customer and Internal Feedback}\label{sec:feedback}
-As mentioned previously, this thesis was divided into phases it was possible to efficiently keep track of the progress. However, the division was motivated by its ability to deliver periodic updates not only to the management team, but also to the customer.
+As mentioned previously, this thesis was divided into phases, so that it would be possible to clearly keep track of the progress. However, the division was motivated by the ability to deliver periodic updates not only to the management team, but also to the customer.
 
 As a contractor in the space sector, \gls{MDA} has everything to gain by having good commercial relationships with its customers. This is why meetings with \gls{SNC} were held during this project. Their main goal was to improve transparency with the client, but they were also used to gather important feedback to iterate over the feature's implementation details. 
 

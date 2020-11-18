@@ -5,12 +5,12 @@ It was mentioned previously that, for integration reasons, the flight software c
 
 In \autoref{sec:conditions}, it was shown that saving the entire set of statically-allocated variables in the DAS domain was a necessary condition for a stable restore. However, as it was forbidden to add \textit{getter} functions (e.g. \mintinline{c}|GetTheVariable()|) to access file-local variables from BBPSim, there needed to be a different solution. For the save and restore to be properly integrated, there needed to be a way to access them at runtime, a kind of indirect or "black box" access. 
 
-In the end, the solution that was adopted involved the handling of DAS object files, \textit{after} they were compiled. Ultimately, no control over the flight software source code was given, but the compilation and building process were alterable. The following sections show how this limited control could be harvested, using a series of manipulations at build time, to give the \gls{BBPSim}-domain objects the required access to save the state of the flight software.
+In the end, the solution that was adopted involved the handling of DAS object files, \textit{after} they were compiled. Ultimately, no control over the flight software source code was given, but the compilation and building process were indeed alterable. The following sections show how this limited control could be harvested, using a series of manipulations at build time, to give the \gls{BBPSim}-domain objects the required access to save the state of the flight software.
 
 The whole process was quite complex. For better visualization, the manipulations were drawn as a flowchart in \autoref{fig:blackbox-diagram}.
 
 \subsection*{Linking Process}
-First of all, it is crucial to understand how the linking process of an application is done. As mentioned earlier, when each source code file is compiled by \gls{GCC}, a \texttt{.o} object file is produced. Although this file contains executable code, the object file that would be produced by GCC would, by itself, not be enough to be executable as a stand-alone. The \textit{linker} needs to first process the object files. The one used in the case of this thesis was GNU \texttt{ld} version 2.27.
+First of all, it is crucial to understand how the linking process of an application is done. As mentioned earlier, when each source code file is compiled by \gls{GCC}, a \texttt{.o} object file is produced. Although this file contains executable code, the object file would not by itself be enough to be executable as a stand-alone. The \textit{linker} first needs to process the object files. The one used in the case of this thesis was GNU \texttt{ld} version 2.27.
 
 \begin{figure}[H]
 	\centering 
@@ -19,9 +19,7 @@ First of all, it is crucial to understand how the linking process of an applicat
 	\label{fig:link-mult-files}
 \end{figure}
 
-The linker's role in the building process is to combine each of the object files given as input into an executable file, or in the case of this thesis, a dynamic library. \autoref{fig:link-mult-files} better illustrates that concept. At linking time, \texttt{ld} groups the same segments from each \texttt{.o} file together and lays them sequentially in the executable object. Since object files can be given in an arbitrary order, the linker can make no guarantee on the final layout on its own.
-
-In addition, while combining the object files together, the linker also resolves the undefined \textit{external} symbols, variables declared in one object file but used in another. 
+The linker's role in the building process is to combine each of the object files given as input into an executable file, or in the case of this thesis, a dynamic library. \autoref{fig:link-mult-files} better illustrates that concept. At linking time, \texttt{ld} groups the same segments from each \texttt{.o} file together and lays them sequentially in the executable object. Since object files can be given in an arbitrary order, the linker can make no guarantee on the final layout on its own. While combining the object files together, the linker also resolves the undefined \textit{external} symbols, variables declared in one object file but used in another. 
 
 Just like source code determines the resulting output of the compiler, it is also possible to control the linking process through the use of a linker script\cite{online:ld-scripts}. Even though, in most cases, users of the GNU linker don't provide a custom script, it is possible to specify one at linking time. 
 
@@ -52,7 +50,7 @@ ld --verbose
 \end{minted}
 From that point, it was possible to partition the essential sections of the DAS object files only by changing the already valid script. These sections could be clustered in a special section of an intermediate shared object \pathmono{libBbpSim-intermediate.so}. 
 
-As previously stated, one of the linker's job when building an executable is to resolve undefined symbols across all object files and to "interlink" them together. To do that, \texttt{ld} starts by looking in other object files to locate and set the correct addresses. Despite that, if said symbols are not defined in any object files, \textit{they can also be defined in the linker script}. This has two major implications: 
+As previously stated, one of the linker's job when building an executable is to resolve undefined symbols across all object files and to "interlink" them together. To do that, \texttt{ld} starts by looking in other object files to locate and set the correct addresses. Despite that, if said symbols are not found as defined in any object files, they can also be defined in the linker script. This has two major implications: 
 \begin{enumerate}
 	\item Bi-directional transmission of values is possible (C code $\Longleftrightarrow$ linker).
 	\item The source code can never know in advance the value of the undefined symbol if it's only defined during the linking phase.
@@ -99,13 +97,13 @@ Once the output was sanitized with \texttt{awk}, a big text file represented in 
 \begin{enumerate}
 	\item The first line contains the SHA1 sum of the entire DAS source code repository. This was added to associate the list of variables to an existing source code for compatibility purposes.
 	\item Each additional line represents a symbol that is contained in the flight software domain. They are laid out in the \verb|[<address> <size> <name>]| format. The addresses and the sizes are outputted in hexadecimal.
-	\item The symbols defined as "guards" (\texttt{__das_state_vars_data_start}) earlier in the linker script were also included in this list. Because they don't represent any value in source code but instead hold an address, their size was zero.
+	\item The symbols defined as "guards" (\texttt{__das_state_vars_data_start}) earlier in the linker script were also included in this list. Because they don't represent any value in source code but instead hold an address, their size is zero.
 \end{enumerate}
 
 \subsection*{Including the Catalog in the Library}
 Being able to generate a symbol catalog was very useful. However, there was a problem: with the way it was constructed, that catalog could never be included in the library. The catalog was generated from a finished shared object, but for it to ever be useful, the catalog needed to be accessible by the library at runtime. This created a chicken and egg problem, where both artifacts were dependent on one another.
 
-The dependence was bypassed by transforming the symbol catalog into an object file and re-linking the library once again, including the new transformed catalog. 
+The dependence was bypassed by transforming the symbol catalog into an object file and re-linking the library once again, including the new, stringized catalog. 
 
 Embedding raw bytes inside an executable file has been done since the early days of computing. For instance, it is possible for a malicious programmer to embed executable code within a self-extracting archive file\cite{online:sfx}. In the case of BBPSim, which was an ELF running on an x86 64-bit machine, it was possible to embed the catalog, as a string, \textit{inside} the library itself by first transforming it into a \texttt{.o} file:
 \begin{minted}{bash}
@@ -146,7 +144,7 @@ The results can be better shown by using a binary visualization program\cite{onl
 	\label{fig:bin-lib-comp}
 \end{figure}
 
-Since there was no modification to the DAS object files between the two linker passes, the variable list taken from \pathmono{libBbpSim-intermediate.so} was \textit{guaranteed} to be the same and in the same order as \pathmono{libBbpSim.so}. This embedding of data also did not violate the ELF specification, which is clear about it's requirements:
+Since there was no modification to the DAS object files between the two linker passes, the variable list taken from \pathmono{libBbpSim-intermediate.so} was \textit{guaranteed} to be the same and in the same order as \pathmono{libBbpSim.so}. This embedding of data also did not violate the ELF specification, which is clear about its requirements:
 
 \begin{shadedquotation}
 [...] sections and segments have no specified order. Only the ELF header has a fixed position in the file.\cite{online:elf-spec}
@@ -177,7 +175,7 @@ When a program links a shared library, it is the job of the \textit{dynamic link
 	\label{fig:mem-displacement}
 \end{figure}
 
-In Linux, the concept of \gls{ASLR} tells the dynamic linker to randomize the location at which the shared library's sections are loaded with every program run. A problem arose with the use of pointers in flight software: because of ASLR at restore time, pointer variables would become invalid, since what they pointed would not be located at the same address, like in  \autoref{fig:ptr-mem-second-run}. This problem did not have a straightforward solution. For this reason, \gls{SNC} was asked if disabling \gls{ASLR} on their Linux machine would be reasonable, and the request was accepted. This meant that \pathmono{libBbpSim.so} would always be loaded at the same address, hence avoiding this problem. The address was one of the fields in the checkpointing artifact header (see \autoref{tab:header-fields}).
+In Linux, the concept of \gls{ASLR} tells the dynamic linker to randomize the location at which the shared library's sections are loaded with every program run. A problem arose with the use of pointers in flight software: because of ASLR at restore time, pointer variables would become invalid, since what they pointed would not be located at the same address, like in  \autoref{fig:ptr-mem-second-run}. This problem did not have a straightforward solution. For this reason, \gls{SNC} was asked if disabling \gls{ASLR} on their Linux machine would be reasonable, and the request was accepted. This meant that \pathmono{libBbpSim.so} would always be loaded at the same address, hence avoiding this problem. This address was one of the fields in the checkpointing artifact header (see \autoref{tab:header-fields}).
 
 \subsection*{Summary}
 This method of indirect access to DAS variables efficiently served its purpose. It defined a way for the BBPSim domain objects to access flight software memory without requiring the modification of software, since everything happened at build time. It deduced the address of the variables rather than depending on an API like \texttt{GetTheVariable()}. This fulfilled the first necessary condition for a stable restore, defined in \autoref{sec:conditions}. One of the big benefits of this approach was that potential addition of new variables to the flight software would be automatically taken in charge, thus the solution was future-proof.
